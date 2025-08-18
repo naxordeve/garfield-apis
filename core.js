@@ -2,7 +2,116 @@ const express = require("express");
 const axios = require("axios");
 const app = express();
 const fetch = require("node-fetch");
+const fs = require("fs");
+const path = require("path");
+const { exec } = require("child_process");
+const util = require("util");
+const execPromise = util.promisify(exec);
 
+const BASE = "https://spotisongdownloader.to";
+const HEADERS = {
+  "accept-encoding": "gzip, deflate, br, zstd",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0"
+};
+
+async function hit(url, opts = {}, type = "text") {
+  const res = await fetch(url, opts);
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return type === "json" ? await res.json() : await res.text();
+}
+
+async function getCookie() {
+  const res = await fetch(BASE, { headers: HEADERS });
+  let cookie = res.headers.get("set-cookie")?.split(";")[0] || "";
+  cookie += "; _ga=GA1.1.2675401.1754827078";
+  return { cookie };
+}
+
+async function ifCaptcha(cObj) {
+  const url = new URL("/ifCaptcha.php", BASE);
+  const headers = { ...HEADERS, ...cObj, referer: BASE };
+  await hit(url, { headers });
+  return headers;
+}
+
+async function singleTrack(url, h) {
+  const api = new URL("/api/composer/spotify/xsingle_track.php", BASE);
+  api.search = new URLSearchParams({ url });
+  return await hit(api, { headers: h }, "json");
+}
+
+async function singleTrackHtml(stObj, h) {
+  const data = [
+    stObj.song_name,
+    stObj.duration,
+    stObj.img,
+    stObj.artist,
+    stObj.url,
+    stObj.album_name,
+    stObj.released
+  ];
+  const api = new URL("/track.php", BASE);
+  const body = new URLSearchParams({ data: JSON.stringify(data) });
+  return await hit(api, { headers: h, body, method: "post" });
+}
+
+async function downloadUrl(url, h, stObj) {
+  const api = new URL("/api/composer/spotify/ssdw23456ytrfds.php", BASE);
+  const body = new URLSearchParams({
+    song_name: "",
+    artist_name: "",
+    url,
+    zip_download: "false",
+    quality: "m4a"
+  });
+  const data = await hit(api, { headers: h, body, method: "post" }, "json");
+  return { ...data, ...stObj };
+}
+
+async function downloadTrack(url) {
+  const cObj = await getCookie();
+  const h = await ifCaptcha(cObj);
+  const stObj = await singleTrack(url, h);
+  await singleTrackHtml(stObj, h);
+  return await downloadUrl(url, h, stObj);
+}
+
+async function convertToMp3(inputPath, outputPath) {
+await execPromise(`ffmpeg -y -i "${inputPath}" -vn -ar 44100 -ac 2 -b:a 192k "${outputPath}"`);}
+app.get("/download/spotify", async (req, res) => {
+  try {
+    const url = req.query.url;
+    if (!url) return res.status(400).json({ error: "url query required" });
+    const track = await downloadTrack(url);
+    const tmpM4a = path.join(__dirname, "temp.m4a");
+    const tmpMp3 = path.join(__dirname, "temp.mp3");
+    const fileRes = await fetch(track.dlink);
+    const fileStream = fs.createWriteStream(tmpM4a);
+    await new Promise((resolve, reject) => {
+      fileRes.body.pipe(fileStream);
+      fileRes.body.on("error", reject);
+      fileStream.on("finish", resolve);
+    });
+
+
+    await convertToMp3(tmpM4a, tmpMp3);
+    res.json({
+      owner: "naxordeve",
+      song_name: track.song_name,
+      artist: track.artist,
+      album_name: track.album_name,
+      released: track.released,
+      duration: track.duration,
+      thumb: track.img,
+      m4a: `/temp.m4a`,
+      mp3: `/temp.mp3`
+    });
+
+    // Optionally clean up files after some time
+  } catch (e) {
+    res.status(500).json({ error: e.toString() });
+  }
+});
 
 const API_KEY = 'AIzaSyDLH31M0HfyB7Wjttl6QQudyBEq5x9s1Yg';
 
