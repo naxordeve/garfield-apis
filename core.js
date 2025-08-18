@@ -7,6 +7,85 @@ const path = require("path");
 const { exec } = require("child_process");
 const util = require("util");
 const execPromise = util.promisify(exec);
+const cheerio = require("cheerio");
+app.use(express.json());
+app.use("/downloads", express.static(path.join(__dirname, "downloads")));
+const baseUrl = "https://k.kurogaze.moe"; ,
+async function fetchPage(url) {
+  const { data } = await axios.get(url, {
+    headers: {
+      "user-agent": "Postify/1.0.0",
+      accept: "text/html",
+      referer: baseUrl
+    },
+    timeout: 15000
+  });
+  return cheerio.load(data);
+}
+
+async function searchAnime(keyword, page = 1) {
+  const url = `${baseUrl}/page/${page}/?s=${encodeURIComponent(keyword)}&post_type=post`;
+  const $ = await fetchPage(url);
+
+  const results = $(".artikel-post article").toArray().map(el => {
+    const wrap = $(el);
+    return {
+      title: wrap.find("h2.title a").text().trim(),
+      link: wrap.find("h2.title a").attr("href"),
+      image: wrap.find(".thumb img").attr("src")
+    };
+  });
+
+  return results;
+}
+
+async function getAnimeDetails(animeUrl, req) {
+  const $ = await fetchPage(animeUrl);
+
+  const title = $("h1").text().trim();
+  const sinopsis = $(".sinopsis .content").text().trim();
+  const downloadLinks = [];
+
+  $(".dlcontent .title-dl-anime").each((_, el) => {
+    const episodeTitle = $(el).text().trim();
+    const episodeNumber = episodeTitle.match(/Episode\s+(\d+)/i)?.[1] || null;
+
+    $(el).next(".dl-content-for").find(".reso").each((_, r) => {
+      const resolution = $(r).find("strong").text().trim();
+      const mirrors = $(r).find("a").map((_, a) => {
+        const fileUrl = $(a).attr("href");
+        const filename = path.basename(fileUrl);
+        const host = req.protocol + "://" + req.get("host");
+        return {
+          label: $(a).text().trim(),
+          link: `${host}/downloads/${filename}`
+        };
+      }).get();
+
+      if (resolution && mirrors.length) {
+        downloadLinks.push({ episode: episodeNumber, episodeTitle, resolution, mirrors });
+      }
+    });
+  });
+
+  return { title, sinopsis, downloadLinks };
+}
+
+
+app.get("/search/anime", async (req, res) => {
+  const { q, page } = req.query;
+  if (!q) return res.status(400).json({ error: "Missing query 'q'" });
+  const results = await searchAnime(q, page || 1);
+  res.json({ success: true, code: 200, result: results });
+});
+
+app.get("/download/anime", async (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).json({ error: "Missing query 'url'" });
+
+  const details = await getAnimeDetails(url, req);
+  res.json({ success: true, code: 200, result: details });
+});
 
 
 const BASE = "https://spotisongdownloader.to";
@@ -251,5 +330,8 @@ app.get("/youtube-audio", async (req, res) => {
   res.status(500).json({ error: e.message });
   }
 });
+
+// ---------------------- START SERVER ----------------------
+
 
 app.listen(3000, () => console.log("YouTube API running on port 3000"));
