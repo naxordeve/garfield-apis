@@ -20,7 +20,6 @@ async function hit(url, opts = {}, type = "text") {
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return type === "json" ? await res.json() : await res.text();
 }
-
 async function getCookie() {
   const res = await fetch(BASE, { headers: HEADERS });
   let cookie = res.headers.get("set-cookie")?.split(";")[0] || "";
@@ -35,9 +34,9 @@ async function ifCaptcha(cObj) {
   return headers;
 }
 
-async function singleTrack(u, h) {
+async function singleTrack(url, h) {
   const api = new URL("/api/composer/spotify/xsingle_track.php", BASE);
-  api.search = new URLSearchParams({ url: u });
+  api.search = new URLSearchParams({ url });
   return await hit(api, { headers: h }, "json");
 }
 
@@ -56,12 +55,12 @@ async function singleTrackHtml(stObj, h) {
   return await hit(api, { headers: h, body, method: "post" });
 }
 
-async function downloadUrl(u, h, stObj) {
+async function downloadUrl(url, h, stObj) {
   const api = new URL("/api/composer/spotify/ssdw23456ytrfds.php", BASE);
   const body = new URLSearchParams({
     song_name: "",
     artist_name: "",
-    url: u,
+    url,
     zip_download: "false",
     quality: "m4a"
   });
@@ -69,21 +68,26 @@ async function downloadUrl(u, h, stObj) {
   return { ...data, ...stObj };
 }
 
-async function downloadTrack(u) {
+async function downloadTrack(url) {
   const cObj = await getCookie();
   const h = await ifCaptcha(cObj);
-  const stObj = await singleTrack(u, h);
+  const stObj = await singleTrack(url, h);
   await singleTrackHtml(stObj, h);
-  return await downloadUrl(u, h, stObj);
+  return await downloadUrl(url, h, stObj);
 }
 
-async function convertToMp3(input, output) {
-  await execPromise(`ffmpeg -y -i "${input}" -vn -ar 44100 -ac 2 -b:a 192k "${output}"`);
+
+async function convertToMp3WithCover(input, output, coverUrl) {
+  const coverPath = path.join(__dirname, `downloads/cover-${Date.now()}.jpg`);
+  const res = await fetch(coverUrl);
+  const buffer = await res.arrayBuffer();
+  fs.writeFileSync(coverPath, Buffer.from(buffer));
+  await execPromise(`ffmpeg -y -i "${input}" -i "${coverPath}" -map 0:a -map 1:v -c:a libmp3lame -b:a 192k -id3v2_version 3 -metadata:s:v title="Album cover" -metadata:s:v comment="Cover" "${output}"`);
+  fs.unlinkSync(coverPath);
 }
 
 app.use("/downloads", express.static(path.join(__dirname, "downloads")));
 if (!fs.existsSync("downloads")) fs.mkdirSync("downloads");
-
 app.get("/download/spotify", async (req, res) => {
   try {
     const url = req.query.url;
@@ -94,6 +98,7 @@ app.get("/download/spotify", async (req, res) => {
     const uniq = Date.now() + Math.floor(Math.random() * 1000);
     const tmpM4a = path.join(__dirname, "downloads", `${uniq}.m4a`);
     const tmpMp3 = path.join(__dirname, "downloads", `${uniq}.mp3`);
+
     const fileRes = await fetch(track.dlink);
     const fileStream = fs.createWriteStream(tmpM4a);
     await new Promise((resolve, reject) => {
@@ -101,9 +106,7 @@ app.get("/download/spotify", async (req, res) => {
       fileRes.body.on("error", reject);
       fileStream.on("finish", resolve);
     });
-
-    await convertToMp3(tmpM4a, tmpMp3);
-
+    await convertToMp3WithCover(tmpM4a, tmpMp3, track.img);
     const host = req.protocol + "://" + req.get("host");
     res.json({
       owner: "naxordeve",
@@ -113,14 +116,16 @@ app.get("/download/spotify", async (req, res) => {
       released: track.released,
       duration: track.duration,
       thumb: track.img,
-      m4a: track.dlink,                      
-      mp3: `${host}/downloads/${uniq}.mp3`  
+      m4a: track.dlink,                     // Direct CDN link
+      mp3: `${host}/downloads/${uniq}.mp3` // Hosted MP3 with cover
     });
+
+    fs.unlinkSync(tmpM4a);
   } catch (e) {
     res.status(500).json({ error: e.toString() });
   }
 });
-
+  
 const API_KEY = 'AIzaSyDLH31M0HfyB7Wjttl6QQudyBEq5x9s1Yg';
 
 async function ytSearch(query, max = 1) {
