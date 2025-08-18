@@ -2,6 +2,43 @@ const express = require("express");
 const axios = require("axios");
 const app = express();
 
+app.get("/download/youtube", async (req, res) => {
+  try {
+    const url = req.query.url;
+    if (!url) return res.status(400).json({ error: "url query required" });
+    const key = "c7c68f45e9f08b8671969f378679a65fa0dcb249";
+    const clean = url.split("?")[0];
+    const enc = encodeURIComponent(clean);
+    const vid = `https://p.oceansaver.in/ajax/download.php?copyright=0&format=720&url=${enc}&api=${key}`;
+    const audi = `https://p.oceansaver.in/ajax/download.php?copyright=0&format=mp3&url=${enc}&api=${key}`;
+    const { data: v } = await axios.get(vid);
+    if (!v.success) return res.status(500).json({ error: "Failed" });
+
+    const { data: a } = await axios.get(audi);
+    if (!a.success) return res.status(500).json({ error: "Failed" });
+
+    async function poll(p) {
+      while (true) {
+        const { data } = await axios.get(p);
+        if (data.success && data.download_url) return data.download_url;
+        await new Promise(r => setTimeout(r, 2000));
+      }
+    }
+
+    const [mp4, mp3] = await Promise.all([poll(v.progress_url), poll(a.progress_url)]);
+
+    res.json({
+      owner: "naxordeve",
+      title: v.title,
+      thumb: v.info.image,
+      mp4,
+      mp3,
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.toString() });
+  }
+});
+
 async function fetchYouTubeFile(url, format) {
   const api = "c7c68f45e9f08b8671969f378679a65fa0dcb249";
   const init = await axios.get(
