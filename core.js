@@ -1,12 +1,8 @@
 const express = require("express");
 const axios = require("axios");
 const app = express();
-
-
-const express = require("express");
-const axios = require("axios");
 const fetch = require("node-fetch");
-const app = express();
+
 
 const API_KEY = 'AIzaSyDLH31M0HfyB7Wjttl6QQudyBEq5x9s1Yg';
 
