@@ -2,7 +2,7 @@
   "name": "garfield",
   "version": "4.0.2",
   "description": "",
-  "main": "index.js",
+  "main": "core.js",
   "scripts": {
     "start": "pm2 start . --attach --name garfield",
     "stop": "pm2 stop garfield",
