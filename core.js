@@ -12,6 +12,13 @@ app.use(express.json());
 const { createHash, randomUUID } = require('crypto')
 
 
+app.get('/tools/shorten', (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).json({ error: 'Missing url' });
+  const short = `https://tun.url/${Buffer.from(url).toString('base64').slice(0, 6)}`;
+  res.json({ original: url, short });
+});
+
 app.get('/tools/ssweb', async (req, res) => {
   const { url } = req.query;
   if (!url) return res.status(400).json({ error: 'Missing url parameter' });
