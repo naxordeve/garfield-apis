@@ -11,6 +11,79 @@ const cheerio = require("cheerio");
 app.use(express.json());
 const { createHash, randomUUID } = require('crypto')
 
+app.get('/search/anime', async (req, res) => {
+  const { name } = req.query;
+  if (!name) return res.status(400).json({ error: 'Missing anime name' });
+  try {const r = await axios.get(`https://api.jikan.moe/v4/anime?q=${name}&limit=1`);
+  res.json(r.data);
+  } catch (e) {
+  res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/search/wiki', async (req, res) => {
+  const { query } = req.query;
+  if (!query) return res.status(400).json({ error: 'Missing query' });
+  try {const summaryRes = await axios.get(`https://en.wikipedia.org/api/rest_v1/page/summary/${query}`);
+    const summary = summaryRes.data;
+    const sectionsRes = await axios.get(`https://en.wikipedia.org/api/rest_v1/page/mobile-sections/${query}`);
+    const sections = sectionsRes.data.sections.map(s => ({
+      title: s.line,
+      text: s.text
+    }));
+
+    res.json({
+      title: summary.title,
+      description: summary.description,
+      extract: summary.extract,
+      url: summary.content_urls.desktop.page,
+      thumbnail: summary.thumbnail ? summary.thumbnail.source : null,
+      sections
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: 'Wikipedia lookup failed', details: err.message });
+  }
+});
+
+
+app.get('/search/github', async (req, res) => {
+  const { username } = req.query;
+  if (!username) return res.status(400).json({ error: 'Missing username' });
+  try {const userRes = await axios.get(`https://api.github.com/users/${username}`);
+    const user = userRes.data;
+    const repoRes = await axios.get(`https://api.github.com/users/${username}/repos?per_page=100`);
+    const repos = repoRes.data.map(r => ({
+      name: r.name,
+      description: r.description,
+      url: r.html_url,
+      stars: r.stargazers_count,
+      forks: r.forks_count,
+      language: r.language,
+      updated_at: r.updated_at
+    }));
+
+    res.json({
+      login: user.login,
+      name: user.name,
+      company: user.company,
+      blog: user.blog,
+      location: user.location,
+      email: user.email,
+      bio: user.bio,
+      public_repos: user.public_repos,
+      followers: user.followers,
+      following: user.following,
+      created_at: user.created_at,
+      updated_at: user.updated_at,
+      avatar_url: user.avatar_url,
+      repos
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: 'err', details: err.message });
+  }
+});
 
 app.get('/tools/shorten', (req, res) => {
   const { url } = req.query;
