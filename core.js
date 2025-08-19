@@ -9,7 +9,64 @@ const util = require("util");
 const execPromise = util.promisify(exec);
 const cheerio = require("cheerio");
 app.use(express.json());
-app.use("/downloads", express.static(path.join(__dirname, "downloads")));
+const { createHash, randomUUID } = require('crypto')
+
+
+const api = {
+  owner: 'naxordeve',
+  base: 'https://translapp.info',
+  endpoint: '/ai/g/ask',
+  headers: {
+    'user-agent': 'Postify/1.0.0',
+    'content-type': 'application/json',
+    'accept-language': 'en',
+  },
+  modules: ['SUMMARIZE','PARAPHRASE','EXPAND','TONE','TRANSLATE','REPLY','GRAMMAR'],
+  tones: ['Friendly','Romantic','Sarcastic','Humour','Social','Angry','Sad','Other'],
+  replies: ['Short','Medium','Long'],
+
+  short: (s) => s.length>=5 ? s.slice(0,5) : 'O'.repeat(5-s.length)+s,
+  hash: (s) => createHash('sha256').update(s,'utf8').digest('hex'),
+}
+
+function randomChoice(arr) {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
+async function run(text, mod='', to='', custom='') {
+  if(!text||!text.trim()) return { success:false, code:400, error:'Text is required' }
+
+  if(!mod) mod = randomChoice(api.modules)
+  if(!api.modules.includes(mod)) return { success:false, code:400, error:`Module must be one of: ${api.modules.join(', ')}` }
+
+  if(mod==='TONE'){
+    if(!to) to = randomChoice(api.tones)
+    if(to==='Other' && !custom.trim()) custom = 'Friendly'
+  }
+  if(mod==='TRANSLATE' && !to.trim()) return { success:false, code:400, error:'Target language required' }
+  if(mod==='REPLY'){
+    if(!to) to = randomChoice(api.replies)
+  }try {
+    const key = api.hash(api.short(text)+'ZERO')
+    const userId = 'GALAXY_AI'+randomUUID()
+    const toVal = mod==='TONE'&&to==='Other'?custom:to
+
+    const payload = { k:key, module:mod, text, to:toVal, userId }
+    const { data } = await axios.post(`${api.base}${api.endpoint}`, payload, { headers: api.headers })
+
+    return { success:true, code:200, module:mod, input:text, to:toVal, output:data.message }
+  } catch(e){
+    return { success:false, code:e.response?.status||500, error:e.response?.data?.message||e.message||'Error' }
+  }
+}
+
+app.post('/api/ai/translapp', async (req,res)=>{
+  const { text, module, to, custom } = req.body
+  const r = await run(text,module,to,custom)
+  res.status(r.code||200).json(r)
+})
+
+app.use("/downloadz", express.static(path.join(__dirname, "downloadz")));
 const baseUrl = "https://k.kurogaze.moe";
 async function fetchPage(url) {
   const { data } = await axios.get(url, {
@@ -24,7 +81,7 @@ async function fetchPage(url) {
 }
 
 async function searchAnime(keyword, page = 1) {
-  const url = `${baseUrl}/page/${page}/?s=${encodeURIComponent(keyword)}&post_type=post`;
+  const url = `${baseUrl}/page/${page}/?s=${keyword}&post_type=post`;
   const $ = await fetchPage(url);
 
   const results = $(".artikel-post article").toArray().map(el => {
@@ -58,7 +115,7 @@ async function getAnimeDetails(animeUrl, req) {
         const host = req.protocol + "://" + req.get("host");
         return {
           label: $(a).text().trim(),
-          link: `${host}/downloads/${filename}`
+          link: `${host}/downloadz/${filename}`
         };
       }).get();
 
