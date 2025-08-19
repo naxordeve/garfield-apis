@@ -12,6 +12,21 @@ app.use(express.json());
 const { createHash, randomUUID } = require('crypto')
 
 
+app.get('/tools/ssweb', async (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).json({ error: 'Missing url parameter' });
+  try {const resp = await axios.get(`https://image.thum.io/get/fullpage/${url}`, {
+  responseType: 'arraybuffer'
+  });
+
+    res.set('Content-Type', 'image/png');
+    res.send(resp.data);
+  } catch (err) {
+    res.status(500).json({ error: 'err', details: err.message });
+  }
+});
+
+
 const api = {
   owner: 'naxordeve',
   base: 'https://translapp.info',
