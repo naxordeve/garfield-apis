@@ -10,7 +10,7 @@ const execPromise = util.promisify(exec);
 const cheerio = require("cheerio");
 app.use(express.json());
 app.use("/downloads", express.static(path.join(__dirname, "downloads")));
-const baseUrl = "https://k.kurogaze.moe"; ,
+const baseUrl = "https://k.kurogaze.moe";
 async function fetchPage(url) {
   const { data } = await axios.get(url, {
     headers: {
