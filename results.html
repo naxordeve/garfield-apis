@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API Results - GF APIs</title>
+    <title>outpt</title>
     <style>
         * {
             margin: 0;
@@ -363,13 +363,13 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>API Results</h1>
+            <h1>Results</h1>
             <a href="/" class="back-button">← Back</a>
         </div>
 
         <div id="loading" class="loading">
             <div class="spinner"></div>
-            <p>Loading results...</p>
+            <p>Loading res...</p>
         </div>
 
         <div id="results-container"></div>
@@ -412,8 +412,6 @@
 
         function createMediaPreview(data, endpoint) {
             let preview = '';
-
-            // Handle ssweb screenshot - construct the image URL
             if (endpoint && endpoint.includes('/tools/ssweb')) {
                 const urlParams = new URLSearchParams(window.location.search);
                 const params = urlParams.get('params');
@@ -426,13 +424,11 @@
                 }
             }
 
-            // Handle images
             if (data.cover || data.thumb || data.image || data.avatar_url) {
                 const imgUrl = data.cover || data.thumb || data.image || data.avatar_url;
                 preview += `<div class="media-preview"><img src="${imgUrl}" alt="Preview" onerror="this.style.display='none'"></div>`;
             }
 
-            // Handle audio/video
             if (data.mp3) {
                 preview += `<div class="media-preview"><audio controls><source src="${data.mp3}" type="audio/mpeg"></audio></div>`;
             }
@@ -443,8 +439,7 @@
                 preview += `<div class="media-preview"><video controls><source src="${data.video}" type="video/mp4"></video></div>`;
             }
 
-            // Handle download links
-            let downloads = '';
+           let downloads = '';
             if (data.mp3 || data.mp4 || data.dlink || data.download_url) {
                 downloads += '<div class="download-links">';
                 if (data.mp3) downloads += `<a href="${data.mp3}" class="download-link" download>MP3</a>`;
@@ -509,8 +504,7 @@
 
                 const stats = getDataStats(data);
                 const apiUrl = window.location.origin + endpoint;
-                const fullResponse = JSON.stringify(data, null, 2);
-
+                const fn = JSON.stringify(data, null, 2);
                 let content = `
                     <div class="result-card">
                         <div class="result-header">
@@ -518,16 +512,15 @@
                                 <div class="endpoint-info">${endpoint}</div>
                                 <div class="timestamp">Results fetched at ${new Date().toLocaleString()}</div>
                                 <div class="copy-buttons" style="margin-top: 10px;">
-                                    <button class="copy-btn" onclick="copyToClipboard('${apiUrl}', this)">Copy API</button>
+                                    <button class="copy-btn" onclick="copyToClipboard('${apiUrl}', this)">Copy Api</button>
                                 </div>
                             </div>
                             <div class="copy-buttons">
-                                <button class="copy-btn" onclick="copyToClipboard(\`${fullResponse.replace(/`/g, '\\`')}\`, this)">Copy Results</button>
+                                <button class="copy-btn" onclick="copyToClipboard(\`${fn.replace(/`/g, '\\`')}\`, this)">Copy Res</button>
                             </div>
                         </div>
                 `;
 
-                // Summary stats
                 if (Object.keys(stats).length > 0) {
                     content += '<div class="summary-stats">';
                     Object.entries(stats).forEach(([key, value]) => {
@@ -543,7 +536,6 @@
                     content += '</div>';
                 }
 
-                // Media preview section
                 const mediaContent = createMediaPreview(data, endpoint);
                 if (mediaContent) {
                     content += `
@@ -559,7 +551,6 @@
                     `;
                 }
 
-                // Tracks section
                 let trackContent = '';
                 if (data.results && Array.isArray(data.results)) {
                     trackContent = createTrackList(data.results);
@@ -583,7 +574,6 @@
                     `;
                 }
 
-                // Full JSON response section
                 content += `
                         <div class="section expanded">
                             <div class="section-header" onclick="toggleSection(this)">
@@ -615,19 +605,13 @@
         }
 
         function toggleSection(header) {
-            const section = header.closest('.section');
-            section.classList.toggle('expanded');
-        }
-
-        // Get URL parameters
+        const section = header.closest('.section');
+        section.classList.toggle('expanded');}
         const urlParams = new URLSearchParams(window.location.search);
         const endpoint = urlParams.get('endpoint');
         const params = urlParams.get('params');
-
         if (endpoint && params) {
             const parsedParams = JSON.parse(decodeURIComponent(params));
-
-            // Make API request
             let url = endpoint;
             if (Object.keys(parsedParams).length > 0) {
                 url += '?' + new URLSearchParams(parsedParams).toString();
