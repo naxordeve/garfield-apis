@@ -11,6 +11,37 @@ const cheerio = require("cheerio");
 app.use(express.json());
 const { createHash, randomUUID } = require('crypto')
 
+app.get("/spotify/track", async (req, res) => {
+  const track_id = req.query.id
+  if (!track_id) return res.status(400).json({ error: "Missing query parameter 'id'" })
+  const SPOTIFY_TOKEN = 'BQA2HHhKUqlv0z2HGY6gGWF9VWxz8O8ZqjlCJ76MXA0-C7UKsWaZqlLUF9mcZxSGszAHRUaemh1eAwgjPOirZQ11kadUxkHhKgKdsB0eFFln_OGP0lOjj-5Q27eqQJaTFgPueerxdVL3J159D5ac5Gdld4BXc2Ds7q0FwX-2NcQFtXPJk3WWVEH5oLtEwwufhpBJ0IwaiwM2Zhh4Qg0vA38n10U0iQpU8luzVy5LaGtsrXQ_g0FB7TBwUMzOVzWGMbVYBGKsYgwgPZOeaCtBRn9o6SLif8_rVAYYINt0PyvLdmGgXVeZWUdulGGDLoO6'
+   try {
+    const resData = await fetch(`https://api.spotify.com/v1/tracks/${track_id}`, {
+      headers: { Authorization: `Bearer ${SPOTIFY_TOKEN}` }
+    })
+    const t = await resData.json()
+    if (!t || !t.id) return res.status(404).json({ error: "Track not found or access denied" })
+
+    const track = {
+      name: t.name,
+      artists: t.artists.map(a => a.name).join(', '),
+      album: t.album.name,
+      url: t.external_urls.spotify,
+      cover: t.album.images[0]?.url
+    }
+    if (t.preview_url) track.preview = t.preview_url
+
+    res.json({
+      owner: "naxordeve",
+      timestamp: new Date().toISOString(),
+      track
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: "error" })
+  }
+})
+
 app.get('/search/anime', async (req, res) => {
   const { name } = req.query;
   if (!name) return res.status(400).json({ error: 'Missing anime name' });
