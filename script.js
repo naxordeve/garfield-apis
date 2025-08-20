@@ -1,5 +1,3 @@
-
-
 document.querySelectorAll('.endpoint-header').forEach(header => {
     header.addEventListener('click', () => {
         const card = header.closest('.endpoint-card');
@@ -7,24 +5,24 @@ document.querySelectorAll('.endpoint-header').forEach(header => {
     });
 });
 
-const searchInput = document.getElementById('searchInput');
-searchInput.addEventListener('input', (e) => {
-    const searchTerm = e.target.value.toLowerCase();
+const s = document.getElementById('searchInput');
+s.addEventListener('input', (e) => {
+    const st = e.target.value.toLowerCase();
     const cards = document.querySelectorAll('.endpoint-card');
     cards.forEach(card => {
-        const searchData = card.getAttribute('data-search');
+        const db = card.getAttribute('data-search');
         const path = card.querySelector('.endpoint-path').textContent;
         const description = card.querySelector('.endpoint-description').textContent;
-        const isMatch = searchData.includes(searchTerm) || 
-                       path.toLowerCase().includes(searchTerm) || 
-                       description.toLowerCase().includes(searchTerm);
+        const isMatch = db.includes(st) || 
+                       path.toLowerCase().includes(st) || 
+                       description.toLowerCase().includes(st);
         
         card.style.display = isMatch ? 'block' : 'none';
     });
 });
 
 function showResults(endpoint, params) {
-    const url = `/results.html?endpoint=${encodeURIComponent(endpoint)}&params=${encodeURIComponent(JSON.stringify(params))}`;
+    const url = `/results.html?endpoint=${endpoint}&params=${JSON.stringify(params)}`;
     window.open(url, '_blank');
 }
 
@@ -37,9 +35,7 @@ function executeSpotifyTrack() {
 function executeSpotifySearch() {
     const query = document.getElementById('spotify-search-query').value.trim();
     if (!query) return alert('Please enter a search query');
-    showResults('/spotify/search', { q: query });
-}
-
+    showResults('/spotify/search', { q: query });}
 function executeAnimeSearch() {
     const query = document.getElementById('anime-search-query').value.trim();
     const page = document.getElementById('anime-search-page').value.trim();
@@ -73,11 +69,8 @@ function executeAiProcess() {
     const target = document.getElementById('ai-target').value.trim();
     
     if (!text) return alert('Please enter text to process');
-    
     const payload = { text, module };
     if (target) payload.to = target;
-    
-    // For POST requests, we need to handle differently
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = '/api/ai/translapp';
