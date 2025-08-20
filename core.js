@@ -83,6 +83,27 @@ app.get('/download/twitter', async (req, res) => {
   }
 });
 
+app.get("/tools/styletext", async (req, res) => {
+  try {
+    let teks = req.query.text
+    if (!teks) return res.json({ owner: "naxordeve", error: "No text provided" })
+
+    let { data } = await axios.get("http://qaz.wtf/u/convert.cgi?text=" + teks)
+    let $ = cheerio.load(data)
+    let hasil = []
+    $("table > tbody > tr").each((a, b) => {
+      hasil.push({
+        name: $(b).find("td:nth-child(1) > h6 > a").text(),
+        result: $(b).find("td:nth-child(2)").text().trim(),
+      })
+    })
+
+    res.json({ owner: "naxordeve", result: hasil })
+  } catch (e) {
+    res.json({ owner: "naxordeve", error: e.message })
+  }
+})
+
 app.get("/spotify/search", async (req, res) => {
   const query = req.query.q
   if (!query) return res.status(400).json({ error: "Missing query parameter 'q'" })
