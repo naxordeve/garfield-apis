@@ -11,6 +11,22 @@ const cheerio = require("cheerio");
 app.use(express.json());
 const { createHash, randomUUID } = require('crypto')
 
+app.get("/tools/emojimix", async (req, res) => {
+  const { emoji1, emoji2 } = req.query
+  if (!emoji1 || !emoji2) return res.json({ owner: "naxordeve", error: "Missing emoji1 or emoji2 parameter" })
+  try {const { data } = await axios.get(`https://tenor.googleapis.com/v2/featured?key=AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ&contentfilter=high&media_filter=png_transparent&component=proactive&collection=emoji_kitchen_v5&q=${emoji1}_${emoji2}`)
+    if (!data || !data.results || data.results.length === 0) 
+      return res.json({ owner: "naxordeve", error: "No results found" })
+    const results = data.results.map(item => ({
+      url: item.media_formats.gif ? item.media_formats.gif.url : null,
+      preview: item.media_formats.nanogif ? item.media_formats.nanogif.url : null
+    }))
+
+    res.json({ owner: "naxordeve", results })
+  } catch (e) {
+    res.json({ owner: "naxordeve", error: e.message })
+  }
+})
 app.get("/spotify/track", async (req, res) => {
   const track_id = req.query.id
   if (!track_id) return res.status(400).json({ error: "Missing query parameter 'id'" })
