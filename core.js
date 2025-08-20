@@ -21,31 +21,38 @@ app.get('/search/anime', async (req, res) => {
   }
 });
 
-app.get('/search/wiki', async (req, res) => {
-  const { query } = req.query;
-  if (!query) return res.status(400).json({ error: 'Missing query' });
-  try {const summaryRes = await axios.get(`https://en.wikipedia.org/api/rest_v1/page/summary/${query}`);
-    const summary = summaryRes.data;
-    const sectionsRes = await axios.get(`https://en.wikipedia.org/api/rest_v1/page/mobile-sections/${query}`);
-    const sections = sectionsRes.data.sections.map(s => ({
-      title: s.line,
-      text: s.text
-    }));
+
+
+app.get("/spotify/search", async (req, res) => {
+  const query = req.query.q
+  if (!query) return res.status(400).json({ error: "Missing query parameter 'q'" })
+  const SPOTIFY_TOKEN = 'BQA2HHhKUqlv0z2HGY6gGWF9VWxz8O8ZqjlCJ76MXA0-C7UKsWaZqlLUF9mcZxSGszAHRUaemh1eAwgjPOirZQ11kadUxkHhKgKdsB0eFFln_OGP0lOjj-5Q27eqQJaTFgPueerxdVL3J159D5ac5Gdld4BXc2Ds7q0FwX-2NcQFtXPJk3WWVEH5oLtEwwufhpBJ0IwaiwM2Zhh4Qg0vA38n10U0iQpU8luzVy5LaGtsrXQ_g0FB7TBwUMzOVzWGMbVYBGKsYgwgPZOeaCtBRn9o6SLif8_rVAYYINt0PyvLdmGgXVeZWUdulGGDLoO6'
+  try { const resData = await fetch(`https://api.spotify.com/v1/search?q=${query}&type=track&limit=40`, {
+  headers: { Authorization: `Bearer ${SPOTIFY_TOKEN}` }})
+  const data = await resData.json()
+    const tracks = data.tracks.items.map(t => {
+      const track = {
+        name: t.name,
+        artists: t.artists.map(a => a.name).join(', '),
+        album: t.album.name,
+        url: t.external_urls.spotify,
+        cover: t.album.images[0]?.url
+      }
+      if (t.preview_url) track.preview = t.preview_url
+      return track
+    })
 
     res.json({
-      title: summary.title,
-      description: summary.description,
-      extract: summary.extract,
-      url: summary.content_urls.desktop.page,
-      thumbnail: summary.thumbnail ? summary.thumbnail.source : null,
-      sections
-    });
-
+      owner: "naxordeve",
+      prompt: query,
+      timestamp: new Date().toISOString(),
+      results: tracks
+    })
   } catch (err) {
-    res.status(500).json({ error: 'Wikipedia lookup failed', details: err.message });
+    console.error(err)
+    res.status(500).json({ error: "error" })
   }
-});
-
+})
 
 app.get('/search/github', async (req, res) => {
   const { username } = req.query;
