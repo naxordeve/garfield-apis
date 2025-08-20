@@ -200,6 +200,10 @@ app.post('/api/ai/translapp', async (req,res)=>{
 })
 
 app.use("/downloadz", express.static(path.join(__dirname, "downloadz")));
+app.use(express.static(__dirname));
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
 const baseUrl = "https://k.kurogaze.moe";
 async function fetchPage(url) {
   const { data } = await axios.get(url, {
@@ -524,4 +528,5 @@ app.get("/youtube-audio", async (req, res) => {
 // ---------------------- START SERVER ----------------------
 
 
-app.listen(3000, () => console.log("YouTube API running on port 3000"));
+app.listen(8000, () => console.log("Garfield API running on port 8000"));
+    
