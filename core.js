@@ -180,6 +180,39 @@ app.get('/tools/shorten', (req, res) => {
   res.json({ original: url, short });
 });
 
+app.get("/search/stickersearch", async (req, res) => {
+  const text = req.query.query
+  if (!text) return res.json({ owner: "naxordeve", error: "Missing query parameter" })
+
+  try {
+    const { data } = await axios.get(`https://getstickerpack.com/stickers?query=${text}`)
+    const $ = cheerio.load(data)
+    const source = []
+    const link = []
+
+    const ya = $('#stickerPacks > div > div:nth-child(3) > div > a').text()
+    if (!ya) return res.json({ owner: "naxordeve", error: "No stickers found" })
+    $('#stickerPacks > div > div:nth-child(3) > div > a').each((i, el) => {
+      source.push($(el).attr('href'))
+    })
+
+    const packUrl = source[Math.floor(Math.random() * source.length)]
+    const { data: packData } = await axios.get(packUrl)
+    const $$ = cheerio.load(packData)
+    $$('#stickerPack > div > div.row > div > img').each((i, el) => {
+      link.push($$(el).attr('src').replace(/&d=200x200/g, ''))
+    })
+
+    res.json({
+      owner: "naxordeve",
+      title: $$('#intro > div > div > h1').text(),
+      sticker_url: link
+    })
+  } catch (e) {
+    res.json({ owner: "naxordeve", error: e.message })
+  }
+})
+
 app.get('/tools/ssweb', async (req, res) => {
   const { url } = req.query;
   if (!url) return res.status(400).json({ error: 'Missing url parameter' });
