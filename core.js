@@ -12,7 +12,58 @@ const qs = require("querystring");
 app.use(express.json());
 const { createHash, randomUUID } = require('crypto');
 
+app.get("/tools/fancytext", (req, res) => {
+  const { text } = req.query;
+  if (!text) return res.status(400).json({ owner: "naxordeve", error: "Provide text, eg: ?text=Hello" });
+  const styles = {
+    bold: t => t.replace(/[A-Za-z]/g, c => String.fromCodePoint(c.charCodeAt(0) + (c >= 'a' && c <= 'z' ? 0x1D41A-0x61 : c >= 'A' && c <= 'Z' ? 0x1D400-0x41 : 0))),
+    italic: t => t.replace(/[A-Za-z]/g, c => String.fromCodePoint(c.charCodeAt(0) + (c >= 'a' && c <= 'z' ? 0x1D44E-0x61 : c >= 'A' && c <= 'Z' ? 0x1D434-0x41 : 0))),
+    bold_italic: t => t.replace(/[A-Za-z]/g, c => String.fromCodePoint(c.charCodeAt(0) + (c >= 'a' && c <= 'z' ? 0x1D482-0x61 : c >= 'A' && c <= 'Z' ? 0x1D468-0x41 : 0))),
+    script: t => t.replace(/[A-Za-z]/g, c => String.fromCodePoint(c.charCodeAt(0) + (c >= 'a' && c <= 'z' ? 0x1D4B6-0x61 : c >= 'A' && c <= 'Z' ? 0x1D49C-0x41 : 0))),
+    bold_script: t => t.replace(/[A-Za-z]/g, c => String.fromCodePoint(c.charCodeAt(0) + (c >= 'a' && c <= 'z' ? 0x1D4EA-0x61 : c >= 'A' && c <= 'Z' ? 0x1D4D0-0x41 : 0))),
+    fraktur: t => t.replace(/[A-Za-z]/g, c => String.fromCodePoint(c.charCodeAt(0) + (c >= 'a' && c <= 'z' ? 0x1D51E-0x61 : c >= 'A' && c <= 'Z' ? 0x1D504-0x41 : 0))),
+    double_struck: t => t.replace(/[A-Za-z]/g, c => String.fromCodePoint(c.charCodeAt(0) + (c >= 'a' && c <= 'z' ? 0x1D552-0x61 : c >= 'A' && c <= 'Z' ? 0x1D538-0x41 : 0))),
+    monospace: t => t.replace(/[A-Za-z]/g, c => String.fromCodePoint(c.charCodeAt(0) + (c >= 'a' && c <= 'z' ? 0x1D68A-0x61 : c >= 'A' && c <= 'Z' ? 0x1D670-0x41 : 0))),
+    underline: t => t.split("").map(c => c + "\u0332").join(""),
+    strikethrough: t => t.split("").map(c => c + "\u0336").join(""),
+    circled: t => t.replace(/[A-Za-z0-9]/g, c => {
+      if (/[A-Z]/.test(c)) return String.fromCodePoint(c.charCodeAt(0)-0x41+0x24B6);
+      if (/[a-z]/.test(c)) return String.fromCodePoint(c.charCodeAt(0)-0x61+0x24D0);
+      if (/[0-9]/.test(c)) return String.fromCodePoint(c.charCodeAt(0)-0x30+0x2460);
+      return c;
+    }),
+    parenthesized: t => t.replace(/[A-Za-z0-9]/g, c => {
+      if (/[A-Z]/.test(c)) return String.fromCodePoint(c.charCodeAt(0)-0x41+0x1F110);
+      if (/[0-9]/.test(c)) return String.fromCodePoint(c.charCodeAt(0)-0x30+0x2474);
+      return c;
+    }),
+    upside_down: t => {
+      const map = { a:"ɐ", b:"q", c:"ɔ", d:"p", e:"ǝ", f:"ɟ", g:"ƃ", h:"ɥ", i:"ᴉ", j:"ɾ", k:"ʞ", l:"ʃ", m:"ɯ", n:"u", o:"o", p:"d", q:"b", r:"ɹ", s:"s", t:"ʇ", u:"n", v:"ʌ", w:"ʍ", x:"x", y:"ʎ", z:"z",
+                    A:"∀", B:"𐐒", C:"Ɔ", D:"◖", E:"Ǝ", F:"Ⅎ", G:"⅁", H:"H", I:"I", J:"ſ", K:"ʞ", L:"⅂", M:"W", N:"N", O:"O", P:"Ԁ", Q:"Ό", R:"ᴚ", S:"S", T:"⊥", U:"∩", V:"Λ", W:"M", X:"X", Y:"⅄", Z:"Z",
+                    "0":"0","1":"Ɩ","2":"ᄅ","3":"Ɛ","4":"ㄣ","5":"ϛ","6":"9","7":"ㄥ","8":"8","9":"6"};
+      return t.split("").map(c => map[c]||map[c.toLowerCase()]||c).reverse().join("");
+    },
+    small_caps: t => t.replace(/[a-z]/gi, c => { const map={a:"ᴀ",b:"ʙ",c:"ᴄ",d:"ᴅ",e:"ᴇ",f:"ꜰ",g:"ɢ",h:"ʜ",i:"ɪ",j:"ᴊ",k:"ᴋ",l:"ʟ",m:"ᴍ",n:"ɴ",o:"ᴏ",p:"ᴘ",q:"ǫ",r:"ʀ",s:"s",t:"ᴛ",u:"ᴜ",v:"ᴠ",w:"ᴡ",x:"x",y:"ʏ",z:"ᴢ"}; return map[c.toLowerCase()]||c; }),
+    full_width: t => t.replace(/[!-~]/g, c => String.fromCharCode(c.charCodeAt(0)-33+0xFF01)),
+    superscript: t => t.replace(/[A-Za-z0-9]/g, c => {
+      const map = {0:"⁰",1:"¹",2:"²",3:"³",4:"⁴",5:"⁵",6:"⁶",7:"⁷",8:"⁸",9:"⁹",a:"ᵃ",b:"ᵇ",c:"ᶜ",d:"ᵈ",e:"ᵉ",f:"ᶠ",g:"ᵍ",h:"ʰ",i:"ⁱ",j:"ʲ",k:"ᵏ",l:"ˡ",m:"ᵐ",n:"ⁿ",o:"ᵒ",p:"ᵖ",q:"q",r:"ʳ",s:"ˢ",t:"ᵗ",u:"ᵘ",v:"ᵛ",w:"ʷ",x:"ˣ",y:"ʸ",z:"ᶻ",
+                   A:"ᴬ",B:"ᴮ",C:"ᶜ",D:"ᴰ",E:"ᴱ",F:"ᶠ",G:"ᴳ",H:"ᴴ",I:"ᴵ",J:"ᴶ",K:"ᴷ",L:"ᴸ",M:"ᴹ",N:"ᴺ",O:"ᴼ",P:"ᴾ",Q:"Q",R:"ᴿ",S:"ˢ",T:"ᵀ",U:"ᵁ",V:"ⱽ",W:"ᵂ",X:"ˣ",Y:"ʸ",Z:"ᶻ"};
+      return map[c]||map[c.toLowerCase()]||c;
+    }),
+    subscript: t => t.replace(/[A-Za-z0-9]/g, c => {
+      const map={0:"₀",1:"₁",2:"₂",3:"₃",4:"₄",5:"₅",6:"₆",7:"₇",8:"₈",9:"₉",a:"ₐ",e:"ₑ",h:"ₕ",i:"ᵢ",j:"ⱼ",k:"ₖ",l:"ₗ",m:"ₘ",n:"ₙ",o:"ₒ",p:"ₚ",r:"ᵣ",s:"ₛ",t:"ₜ",u:"ᵤ",v:"ᵥ",x:"ₓ"};
+      return map[c]||map[c.toLowerCase()]||c;
+    }),
+    zalgo: t => t.split("").map(c => c + "\u0300\u0301\u0302\u0303\u0304\u0305").join("")
+  };
 
+  const result = {};
+  for (const [name, fn] of Object.entries(styles)) {
+    result[name] = fn(text);
+  }
+
+  res.json({ owner: "naxordeve", original: text, styles: result });
+});
 
 const OWNER = "naxordeve";
 const UNSPLASH_KEY = "JOioO8aPCAsnu3-AksI7qjO0PZtzVtyMasRg9E4fd0c";
