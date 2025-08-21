@@ -10,18 +10,15 @@ const execPromise = util.promisify(exec);
 const cheerio = require("cheerio");
 const qs = require("querystring");
 app.use(express.json());
-const { createHash, randomUUID } = require('crypto')
+const { createHash, randomUUID } = require('crypto');
 
-// Spotify token management
 let SPOTIFY_TOKEN = null;
 let TOKEN_EXPIRES_AT = 0;
 
 async function getSpotifyToken() {
   if (SPOTIFY_TOKEN && Date.now() < TOKEN_EXPIRES_AT) {
     return SPOTIFY_TOKEN;
-  }
-
-  try {
+  }try {
     const client_id = '4fe3fecfe5334023a1472516cc2f3d89';
     const client_secret = 'b0e756a6af0849a7ae8f59c95555e48e';
     const basic = Buffer.from(`${client_id}:${client_secret}`).toString("base64");
@@ -699,7 +696,6 @@ const pinn = async (query) => {
 app.get('/search/pinterest', async (req, res) => {
   const { q } = req.query;
   if (!q) return res.status(400).json({ error: 'Query parameter "q" is required' });
-
   try {
     const pins = await pinn(q);
     res.json({ 
@@ -716,25 +712,24 @@ app.get('/search/pinterest', async (req, res) => {
 
 // ======================= APTOIDE API =======================
 
-// Function to search Aptoide
 async function searchAptoide(query, limit = 5) {
   try {
-    const url = `https://ws75.aptoide.com/api/7/apps/search?query=${encodeURIComponent(query)}&limit=${limit}`;
+    const url = `https://ws75.aptoide.com/api/7/apps/search?query=${query}&limit=${limit}`;
     const res = await axios.get(url);
     if (res.data?.datalist?.list) {
       return res.data.datalist.list
-        .filter(app => app && app.name && app.file && app.file.path) // Filter out invalid apps
+        .filter(app => app && app.name && app.file && app.file.path) 
         .map(app => ({
           owner: "naxordeve",
           id: app.id || 0,
-          name: app.name || 'Unknown App',
-          package: app.package || 'unknown.package',
-          version: app.file?.vername || '1.0',
+          name: app.name,
+          package: app.package,
+          version: app.file?.vername,
           size: app.size || 0,
-          downloads: app.stats?.downloads || 0,
-          rating: app.stats?.rating?.avg || 0,
-          developer: app.developer?.name || 'Unknown Developer',
-          store: app.store?.name || 'Unknown Store',
+          downloads: app.stats?.downloads,
+          rating: app.stats?.rating?.avg,
+          developer: app.developer?.name,
+          store: app.store?.name,
           icon: app.icon || '',
           download_url: app.file.path
         }));
@@ -746,56 +741,42 @@ async function searchAptoide(query, limit = 5) {
   }
 }
 
-// Route to search apps
 app.get('/aptoide', async (req, res) => {
   const { q, limit } = req.query;
   if (!q) return res.status(400).json({ error: 'Query parameter "q" is required' });
-
   const results = await searchAptoide(q, limit || 5);
   res.json({ owner: "naxordeve", results });
 });
 
-// Store for tracking download progress
-const downloadProgress = new Map();
-
-// Route to initiate APK download and return download ID
+const cnc = new Map();
 app.get('/aptoide/download', async (req, res) => {
   const { url } = req.query;
   if (!url) return res.status(400).json({ error: 'Query parameter "url" is required' });
-
-  const downloadId = randomUUID();
-  downloadProgress.set(downloadId, { progress: 0, status: 'starting' });
-
-  try {
-    // Get file info first
-    const headResponse = await axios.head(url).catch(() => null);
-    const totalSize = headResponse ? parseInt(headResponse.headers['content-length'] || '0') : 0;
-    const filename = url.split('/').pop() || 'app.apk';
-
-    downloadProgress.set(downloadId, { 
+  const dld = randomUUID();
+  cnc.set(dld, { progress: 0, status: 'starting' });
+  try {const xn = await axios.head(url).catch(() => null);
+  const totalSize = xn ? parseInt(xn.headers['content-length'] || '0') : 0;
+  const filename = url.split('/').pop() || 'app.apk';
+    cnc.set(dld, { 
       progress: 0, 
       status: 'downloading', 
       filename,
       totalSize,
       downloadedSize: 0
     });
-
-    // Start download
     const response = await axios.get(url, { responseType: 'stream' });
     let downloadedSize = 0;
     let actualTotalSize = totalSize;
-
-    // Try to get content-length from the actual response if HEAD request failed
     if (!actualTotalSize && response.headers['content-length']) {
-      actualTotalSize = parseInt(response.headers['content-length']);
+    actualTotalSize = parseInt(response.headers['content-length']);
     }
 
     response.data.on('data', (chunk) => {
-      downloadedSize += chunk.length;
-      const progress = actualTotalSize > 0 ? Math.round((downloadedSize / actualTotalSize) * 100) : 
-                     Math.min(Math.round(downloadedSize / (1024 * 1024)), 99); // Fallback progress based on MB downloaded
+    downloadedSize += chunk.length;
+    const progress = actualTotalSize > 0 ? Math.round((downloadedSize / actualTotalSize) * 100) : 
+                     Math.min(Math.round(downloadedSize / (1024 * 1024)), 99); 
       
-      downloadProgress.set(downloadId, {
+      cnc.set(dld, {
         progress,
         status: 'downloading',
         filename,
@@ -805,7 +786,7 @@ app.get('/aptoide/download', async (req, res) => {
     });
 
     response.data.on('end', () => {
-      downloadProgress.set(downloadId, {
+      cnc.set(dld, {
         progress: 100,
         status: 'completed',
         filename,
@@ -813,14 +794,13 @@ app.get('/aptoide/download', async (req, res) => {
         downloadedSize
       });
       
-      // Clean up after 5 minutes
       setTimeout(() => {
-        downloadProgress.delete(downloadId);
+        cnc.delete(dld);
       }, 5 * 60 * 1000);
     });
 
     response.data.on('error', (err) => {
-      downloadProgress.set(downloadId, {
+      cnc.set(dld, {
         progress: 0,
         status: 'error',
         error: err.message
@@ -829,13 +809,12 @@ app.get('/aptoide/download', async (req, res) => {
 
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Type', 'application/vnd.android.package-archive');
-    res.setHeader('X-Download-ID', downloadId);
+    res.setHeader('X-Download-ID', dld);
     res.setHeader('Content-Length', actualTotalSize.toString());
     response.data.pipe(res);
-
   } catch (err) {
     console.error(err);
-    downloadProgress.set(downloadId, {
+    cnc.set(dld, {
       progress: 0,
       status: 'error',
       error: err.message
@@ -844,15 +823,12 @@ app.get('/aptoide/download', async (req, res) => {
   }
 });
 
-// Route to check download progress
 app.get('/aptoide/download/progress/:id', (req, res) => {
   const { id } = req.params;
-  const progress = downloadProgress.get(id);
-  
+  const progress = cnc.get(id);
   if (!progress) {
-    return res.status(404).json({ error: 'Download not found' });
+  return res.status(404).json({ error: 'Download not found' });
   }
-  
   res.json({
     owner: "naxordeve",
     downloadId: id,
@@ -863,5 +839,5 @@ app.get('/aptoide/download/progress/:id', (req, res) => {
 // ---------------------- START SERVER ----------------------
 
 
-app.listen(8000, '0.0.0.0', () => console.log("Garfield API running on port 8000"));
+app.listen(8000, () => console.log("Garfield API running on port 8000"));
     
