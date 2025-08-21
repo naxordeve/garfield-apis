@@ -12,6 +12,61 @@ const qs = require("querystring");
 app.use(express.json());
 const { createHash, randomUUID } = require('crypto');
 
+
+
+const OWNER = "naxordeve";
+const UNSPLASH_KEY = "JOioO8aPCAsnu3-AksI7qjO0PZtzVtyMasRg9E4fd0c";
+const OPENWEATHER_KEY = "f115ffbeeaa8833c7757898a367e8f8e";
+// ================== IMAGE SEARCH ==================
+app.get("/search/image", async (req, res) => {
+  const { q } = req.query;
+  if (!q) return res.status(400).json({ owner: OWNER, error: "Provide a search query, eg: ?q=cat" });
+  try {
+    const { data } = await axios.get(`https://api.unsplash.com/search/photos`, {
+      params: { query: q, per_page: 5 },
+      headers: { Authorization: `Client-ID ${UNSPLASH_KEY}` }
+    });
+    const results = data.results.map(r => r.urls.small);
+    res.json({ owner: OWNER, query: q, results });
+  } catch (err) {
+    res.status(500).json({ owner: OWNER, error: err.message });
+  }
+});
+
+// ================== YOUTUBE SEARCH ==================
+app.get("/search/yts", async (req, res) => {
+  const { q } = req.query;
+  if (!q) return res.status(400).json({ owner: OWNER, error: "Provide a search query, eg: ?q=music video" });
+  try { const { data } = await axios.get(`https://www.googleapis.com/youtube/v3/search`, {
+      params: { q, part: "snippet", maxResults: 5, key: "AIzaSyDLH31M0HfyB7Wjttl6QQudyBEq5x9s1Yg" }
+    });
+    const results = data.items.map(i => ({
+      title: i.snippet.title,
+      channel: i.snippet.channelTitle,
+      thumbnail: i.snippet.thumbnails.default.url,
+      link: `https://www.youtube.com/watch?v=${i.id.videoId}`
+    }));
+    res.json({ owner: OWNER, query: q, results });
+  } catch (err) {
+    res.status(500).json({ owner: OWNER, error: err.message });
+  }
+});
+
+// ================== WEATHER ==================
+app.get("/search/weather", async (req, res) => {
+  const { city } = req.query;
+  if (!city) return res.status(400).json({ owner: OWNER, error: "Provide city, eg: ?city=Johannesburg" });
+  try {
+    const { data } = await axios.get(`https://api.openweathermap.org/data/2.5/weather`, {
+      params: { q: city, units: "metric", appid: OPENWEATHER_KEY }
+    });
+    res.json({ owner: OWNER, city, weather: data });
+  } catch (err) {
+    res.status(500).json({ owner: OWNER, error: err.message });
+  }
+});
+
+
 // ================= Lyrics API =================
 app.get("/search/lyrics", async (req, res) => {
   const { q } = req.query;
