@@ -173,8 +173,6 @@ function executePinterestSearch() {
 function executeAptoideDownload() {
     const url = document.getElementById('aptoide-download-url').value.trim();
     if (!url) return alert('Please enter an APK download URL');
-    
-    // Create progress modal
     const modal = document.createElement('div');
     modal.style.cssText = `
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -200,22 +198,16 @@ function executeAptoideDownload() {
     
     modal.appendChild(progressBox);
     document.body.appendChild(modal);
-    
-    // Start download
-    const downloadUrl = `/aptoide/download?url=${encodeURIComponent(url)}`;
+    const downloadUrl = `/aptoide/download?url=${url}`;
     const downloadFrame = document.createElement('iframe');
     downloadFrame.style.display = 'none';
     document.body.appendChild(downloadFrame);
-    
     let downloadId = null;
     let progressInterval = null;
-    
-    // Monitor for download ID in response headers
     fetch(downloadUrl, { method: 'HEAD' })
         .then(response => {
             downloadId = response.headers.get('X-Download-ID');
             if (downloadId) {
-                // Start progress monitoring
                 progressInterval = setInterval(() => {
                     fetch(`/aptoide/download/progress/${downloadId}`)
                         .then(res => res.json())
@@ -223,7 +215,6 @@ function executeAptoideDownload() {
                             const progressBar = document.getElementById('progress-bar');
                             const progressText = document.getElementById('progress-text');
                             const downloadInfo = document.getElementById('download-info');
-                            
                             if (progressBar && progressText) {
                                 progressBar.style.width = data.progress + '%';
                                 progressText.textContent = data.progress + '%';
@@ -251,19 +242,18 @@ function executeAptoideDownload() {
                                     }, 1000);
                                 } else if (data.status === 'error') {
                                     clearInterval(progressInterval);
-                                    alert('Download failed: ' + (data.error || 'Unknown error'));
+                                    alert('failed: ' + (data.error || 'error'));
                                     document.body.removeChild(modal);
                                     document.body.removeChild(downloadFrame);
                                 }
                             }
                         })
                         .catch(err => {
-                            console.error('Progress check failed:', err);
+                            console.error(err);
                         });
                 }, 500);
             }
             
-            // Start actual download
             downloadFrame.src = downloadUrl;
         })
         .catch(err => {
@@ -272,7 +262,6 @@ function executeAptoideDownload() {
             document.body.removeChild(downloadFrame);
         });
     
-    // Cancel button
     document.getElementById('cancel-download').onclick = () => {
         if (progressInterval) clearInterval(progressInterval);
         document.body.removeChild(modal);
