@@ -12,6 +12,87 @@ const qs = require("querystring");
 app.use(express.json());
 const { createHash, randomUUID } = require('crypto');
 
+// ================= Lyrics API =================
+app.get("/search/lyrics", async (req, res) => {
+  const { q } = req.query;
+  if (!q) return res.status(400).json({ owner: "naxordeve", error: "Provide a song title, eg: ?q=" });
+  try {
+    const url = `https://lrclib.net/api/search?q=${q}`;
+    const headers = {
+      "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
+      Referer: "https://lrclib.net"
+    };
+
+    const { data } = await axios.get(url, { headers });
+    if (!data.length) return res.status(404).json({ owner: "naxordeve", error: "No lyrics found" });
+    const r = data[0];
+    const text = `*${r.trackName}* by *${r.artistName}*\n\n${r.plainLyrics || "_nothin_"}`;
+    const caption = text.length > 4000 ? text.slice(0, 4000) + "\n\n_Lyrics truncated..._" : text;
+    res.json({
+      owner: "naxordeve",
+      track: r.trackName,
+      artist: r.artistName,
+      lyrics: r.plainLyrics || "_nothin_",
+      image: "https://files.catbox.moe/6jx2fn.jpg",
+      caption
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ owner: "naxordeve", error: "Something went wrong" });
+  }
+});
+
+// ================= AI API =================
+app.post("/ai/gpt", async (req, res) => {
+  const { prompt } = req.body;
+  if (!prompt) return res.status(400).json({ owner: "naxordeve", error: "Provide a prompt in JSON, eg: { \"prompt\": \"Hello\" }" });
+  function ip() { return `${rand()}.${rand()}.${rand()}.${rand()}`; }
+  function rand() { return Math.floor(Math.random() * 255) + 1; }
+  function heads() {
+    let x = ip();
+    return {
+      accept: "application/json, text/plain, */*",
+      "content-type": "application/json",
+      origin: "https://whatsthebigdata.com",
+      referer: "https://whatsthebigdata.com/ai-chat/",
+      "user-agent": "Mozilla/5.0 (Linux; Android 10)",
+      "x-forwarded-for": x,
+      "x-real-ip": x,
+      "x-client-ip": x
+    };
+  }
+
+  const models = ["gpt-4o", "gpt-4o-mini", "claude-3-opus", "claude-3-sonnet","llama-3", "llama-3-pro", "perplexity-ai", "mistral-large", "gemini-1.5-pro"];
+  try {
+    let model = "gpt-4o";
+    let text = prompt;
+    if (prompt.includes(":")) {
+      let p = prompt.split(":");
+      let m = p[0].trim().toLowerCase();
+      if (models.includes(m)) {
+        model = m;
+        text = p.slice(1).join(":").trim();
+      }
+    }
+
+    const response = await axios.post(
+      "https://whatsthebigdata.com/api/ask-ai/",
+      { message: text, model, history: [] },
+      { headers: heads() }
+    );
+
+    res.json({
+      owner: "naxordeve",
+      model,
+      prompt: text,
+      response: response.data?.text || "no reply"
+    });
+  } catch (err) {
+    res.status(500).json({ owner: "naxordeve", error: err.response?.data || err.message || "error" });
+  }
+});
+
+
 let SPOTIFY_TOKEN = null;
 let TOKEN_EXPIRES_AT = 0;
 
