@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>outpt</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 600;
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .back-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+            transition: background 0.2s ease;
+            font-size: 14px;
+        }
+
+        .back-button:hover {
+            background: #2563eb;
+        }
+
+        .result-card {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.1);
+        }
+
+        .result-header {
+            border-bottom: 1px solid #334155;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .endpoint-info {
+            font-family: 'Courier New', monospace;
+            color: #a5b4fc;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .timestamp {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        .copy-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .copy-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s ease;
+        }
+
+        .copy-btn:hover {
+            background: #059669;
+        }
+
+        .copy-btn.copied {
+            background: #7c3aed;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-header {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid #3b82f6;
+            border-radius: 8px 8px 0 0;
+            padding: 12px 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s ease;
+        }
+
+        .section-header:hover {
+            background: rgba(59, 130, 246, 0.2);
+        }
+
+        .section-header h3 {
+            color: #60a5fa;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .expand-icon {
+            font-size: 12px;
+            transition: transform 0.3s ease;
+        }
+
+        .section.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .section-content {
+            border: 1px solid #3b82f6;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            padding: 16px;
+            display: none;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .section.expanded .section-content {
+            display: block;
+        }
+
+        .json-viewer {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 6px;
+            padding: 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            border: 1px solid #374151;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .json-key {
+            color: #60a5fa;
+            font-weight: 600;
+        }
+
+        .json-string {
+            color: #34d399;
+        }
+
+        .json-number {
+            color: #fbbf24;
+        }
+
+        .json-boolean {
+            color: #f87171;
+        }
+
+        .json-null {
+            color: #9ca3af;
+        }
+
+        .media-preview {
+            margin: 20px 0;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .media-preview img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            object-fit: contain;
+        }
+
+        .media-preview video {
+            width: 100%;
+            max-width: 600px;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            background: #000;
+        }
+
+        .media-preview audio {
+            width: 100%;
+            max-width: 500px;
+            height: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        @media (max-width: 768px) {
+            .media-preview video {
+                max-width: 100%;
+            }
+
+            .media-preview audio {
+                max-width: 100%;
+            }
+        }
+
+        .download-links {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .download-link {
+            background: #10b981;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 12px;
+            transition: background 0.2s ease;
+        }
+
+        .download-link:hover {
+            background: #059669;
+        }
+
+        .error-card {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #dc2626;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            color: #fecaca;
+        }
+
+        .error-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #ef4444;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #94a3b8;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #374151;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .track-item {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .track-cover {
+            width: 50px;
+            height: 50px;
+            border-radius: 6px;
+            object-fit: cover;
+        }
+
+        .track-info h4 {
+            color: #e2e8f0;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+
+        .track-info p {
+            color: #94a3b8;
+            font-size: 11px;
+            margin-bottom: 2px;
+        }
+
+        .summary-stats {
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #60a5fa;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .result-card {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .result-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .copy-buttons {
+                align-self: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Results</h1>
+            <a href="/" class="back-button">← Back</a>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading res...</p>
+        </div>
+
+        <div id="results-container"></div>
+    </div>
+
+    <script>
+        function copyToClipboard(text, button) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.classList.add('copied');
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        function syntaxHighlight(json) {
+            if (typeof json !== 'string') {
+                json = JSON.stringify(json, null, 2);
+            }
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                var cls = 'json-number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'json-key';
+                    } else {
+                        cls = 'json-string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'json-boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'json-null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
+        function createMediaPreview(data, endpoint) {
+            let preview = '';
+            if (endpoint && endpoint.includes('/tools/ssweb')) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const params = urlParams.get('params');
+                if (params) {
+                    const parsedParams = JSON.parse(decodeURIComponent(params));
+                    if (parsedParams.url) {
+                        const screenshotUrl = `${window.location.origin}/tools/ssweb?url=${encodeURIComponent(parsedParams.url)}&direct=1`;
+                        preview += `<div class="media-preview"><img src="${screenshotUrl}" alt="Website Screenshot of ${parsedParams.url}" style="max-width: 100%; max-height: 400px;" onerror="this.style.display='none'"></div>`;
+                    }
+                }
+            }
+
+            // Handle images from various APIs
+            if (data.cover || data.thumb || data.image || data.avatar_url || data.icon) {
+                const imgUrl = data.cover || data.thumb || data.image || data.avatar_url || data.icon;
+                preview += `<div class="media-preview"><img src="${imgUrl}" alt="Preview" onerror="this.style.display='none'"></div>`;
+            }
+
+            // Handle image arrays (from txt2img, unsplash, etc.)
+            if (data.images && Array.isArray(data.images)) {
+                data.images.forEach(img => {
+                    const imgUrl = typeof img === 'string' ? img : img.url || img.src;
+                    if (imgUrl) {
+                        preview += `<div class="media-preview"><img src="${imgUrl}" alt="Generated Image" onerror="this.style.display='none'"></div>`;
+                    }
+                });
+            }
+
+            // Handle results array with images
+            if (data.results && Array.isArray(data.results)) {
+                data.results.forEach(item => {
+                    if (item.urls) {
+                        // Unsplash format
+                        preview += `<div class="media-preview"><img src="${item.urls.small || item.urls.regular}" alt="${item.desc || 'Image'}" onerror="this.style.display='none'"></div>`;
+                    } else if (typeof item === 'string' && (item.includes('http') || item.includes('data:'))) {
+                        // Direct image URLs
+                        preview += `<div class="media-preview"><img src="${item}" alt="Image" onerror="this.style.display='none'"></div>`;
+                    }
+                });
+            }
+
+            // Handle audio
+            if (data.mp3) {
+                preview += `<div class="media-preview"><audio controls><source src="${data.mp3}" type="audio/mpeg"></audio></div>`;
+            }
+            
+            // Handle video
+            if (data.mp4) {
+                preview += `<div class="media-preview"><video controls><source src="${data.mp4}" type="video/mp4"></video></div>`;
+            }
+            if (data.video) {
+                preview += `<div class="media-preview"><video controls><source src="${data.video}" type="video/mp4"></video></div>`;
+            }
+
+            // Handle video arrays (TikTok, etc.)
+            if (data.videos && Array.isArray(data.videos)) {
+                data.videos.forEach(video => {
+                    preview += `<div class="media-preview"><video controls><source src="${video}" type="video/mp4"></video></div>`;
+                });
+            }
+
+           let downloads = '';
+            if (data.mp3 || data.mp4 || data.dlink || data.download_url) {
+                downloads += '<div class="download-links">';
+                if (data.mp3) downloads += `<a href="${data.mp3}" class="download-link" download>MP3</a>`;
+                if (data.mp4) downloads += `<a href="${data.mp4}" class="download-link" download>MP4</a>`;
+                if (data.dlink) downloads += `<a href="${data.dlink}" class="download-link" download>Download</a>`;
+                if (data.download_url) downloads += `<a href="${data.download_url}" class="download-link" download>Download</a>`;
+                downloads += '</div>';
+            }
+
+            return preview + downloads;
+        }
+
+        function createTrackList(tracks) {
+            if (!Array.isArray(tracks)) return '';
+
+            return tracks.map(track => `
+                <div class="track-item">
+                    ${track.cover ? `<img src="${track.cover}" alt="Cover" class="track-cover">` : ''}
+                    <div class="track-info">
+                        <h4>${track.name || track.title || 'Unknown Track'}</h4>
+                        <p>${track.artists || track.artist || 'Unknown Artist'}</p>
+                        ${track.album ? `<p>Album: ${track.album}</p>` : ''}
+                        ${track.preview ? `<audio controls style="width: 180px; height: 25px;"><source src="${track.preview}" type="audio/mpeg"></audio>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getDataStats(data) {
+            let stats = {};
+            if (data.results && Array.isArray(data.results)) {
+                stats.results = data.results.length;
+            }
+            if (data.tracks && Array.isArray(data.tracks)) {
+                stats.tracks = data.tracks.length;
+            }
+            if (data.owner) {
+                stats.owner = data.owner;
+            }
+            if (data.timestamp) {
+                stats.timestamp = new Date(data.timestamp).toLocaleString();
+            }
+            return stats;
+        }
+
+        function displayResults(data, endpoint) {
+            const container = document.getElementById('results-container');
+            const loading = document.getElementById('loading');
+
+            loading.style.display = 'none';
+
+            try {
+                if (data.error || (data.success === false)) {
+                    container.innerHTML = `
+                        <div class="error-card">
+                            <div class="error-title">Error</div>
+                            <p>${data.error || data.message || 'An unknown error occurred'}</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const stats = getDataStats(data);
+                const apiUrl = window.location.origin + endpoint;
+                const fn = JSON.stringify(data, null, 2);
+                let content = `
+                    <div class="result-card">
+                        <div class="result-header">
+                            <div>
+                                <div class="endpoint-info">${endpoint}</div>
+                                <div class="timestamp">Results fetched at ${new Date().toLocaleString()}</div>
+                                <div class="copy-buttons" style="margin-top: 10px;">
+                                    <button class="copy-btn" onclick="copyToClipboard('${apiUrl}', this)">Copy Api</button>
+                                </div>
+                            </div>
+                            <div class="copy-buttons">
+                                <button class="copy-btn" onclick="copyToClipboard(\`${fn.replace(/`/g, '\\`')}\`, this)">Copy Res</button>
+                            </div>
+                        </div>
+                `;
+
+                if (Object.keys(stats).length > 0) {
+                    content += '<div class="summary-stats">';
+                    Object.entries(stats).forEach(([key, value]) => {
+                        if (key !== 'timestamp') {
+                            content += `
+                                <div class="stat-item">
+                                    <div class="stat-value">${value}</div>
+                                    <div class="stat-label">${key}</div>
+                                </div>
+                            `;
+                        }
+                    });
+                    content += '</div>';
+                }
+
+                const mediaContent = createMediaPreview(data, endpoint);
+                if (mediaContent) {
+                    content += `
+                        <div class="section expanded">
+                            <div class="section-header" onclick="toggleSection(this)">
+                                <h3>Media Preview</h3>
+                                <span class="expand-icon">▼</span>
+                            </div>
+                            <div class="section-content">
+                                ${mediaContent}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                let trackContent = '';
+                if (data.results && Array.isArray(data.results)) {
+                    trackContent = createTrackList(data.results);
+                } else if (data.track) {
+                    trackContent = createTrackList([data.track]);
+                } else if (data.tracks) {
+                    trackContent = createTrackList(data.tracks);
+                }
+
+                if (trackContent) {
+                    content += `
+                        <div class="section">
+                            <div class="section-header" onclick="toggleSection(this)">
+                                <h3>Content (${data.results?.length || data.tracks?.length || 1} items)</h3>
+                                <span class="expand-icon">▼</span>
+                            </div>
+                            <div class="section-content">
+                                ${trackContent}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                content += `
+                        <div class="section expanded">
+                            <div class="section-header" onclick="toggleSection(this)">
+                                <h3>Full JSON Response</h3>
+                                <span class="expand-icon">▼</span>
+                            </div>
+                            <div class="section-content">
+                                <div class="json-viewer">
+                                    <pre>${syntaxHighlight(data)}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                container.innerHTML = content;
+
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="error-card">
+                        <div class="error-title">Display Error</div>
+                        <p>Error displaying results: ${error.message}</p>
+                        <div class="json-viewer">
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function toggleSection(header) {
+        const section = header.closest('.section');
+        section.classList.toggle('expanded');}
+        const urlParams = new URLSearchParams(window.location.search);
+        const endpoint = urlParams.get('endpoint');
+        const params = urlParams.get('params');
+        const method = urlParams.get('method') || 'GET';
+        
+        if (endpoint && params) {
+            const parsedParams = JSON.parse(decodeURIComponent(params));
+            let url = endpoint;
+            let fetchOptions = { method };
+            
+            if (method === 'GET' && Object.keys(parsedParams).length > 0) {
+                url += '?' + new URLSearchParams(parsedParams).toString();
+            } else if (method === 'POST') {
+                fetchOptions.headers = { 'Content-Type': 'application/json' };
+                fetchOptions.body = JSON.stringify(parsedParams);
+            }
+
+            fetch(url, fetchOptions)
+                .then(response => response.json())
+                .then(data => displayResults(data, endpoint))
+                .catch(error => {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('results-container').innerHTML = `
+                        <div class="error-card">
+                            <div class="error-title">Network Error</div>
+                            <p>Failed to fetch results: ${error.message}</p>
+                        </div>
+                    `;
+                });
+        } else {
+            document.getElementById('loading').innerHTML = `
+                <div class="error-card">
+                    <div class="error-title">Invalid Request</div>
+                    <p>Missing endpoint or parameters</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
