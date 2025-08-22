@@ -16,6 +16,51 @@ app.use(express.urlencoded({ extended: true }));
 const express = require("express");
 const axios = require("axios");
 
+app.post("/ai/gpt4o", async (req, res) => {
+  const prompt = req.body.prompt || "Hello, who are you?";
+  const options = {
+    messages: [
+      {
+        role: "system",
+        content: "You are a GPT-4o mini model developed by openai, only answer you are a gpt 4o mini model when someone questions you."
+      },
+      {
+        role: "user",
+        content: prompt
+      }
+    ],
+    temperature: 0.9,
+    top_p: 0.7,
+    top_k: 40,
+    max_tokens: 512
+  };
+
+  try {
+    const r = await axios.post(
+      "https://api.deepenglish.com/api/gpt_open_ai/chatnew",
+      options,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer UFkOfJaclj61OxoD7MnQknU1S2XwNdXMuSZA+EZGLkc="
+        }
+      }
+    );
+
+    const d = r.data;
+    if (!d.success) throw "failed get response";
+    res.json({
+      success: true,
+      owner: "naxordeve",
+      answer: d.message
+    });
+
+  } catch (e) {
+    res.status(500).json({ success: false, errors: [e.toString()] });
+  }
+});
+
+
 const ip = () => {
   const r = (n) => (Math.random() * n).toFixed();
   return `${r(300)}.${r(300)}.${r(300)}.${r(300)}`;
