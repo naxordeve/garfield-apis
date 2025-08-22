@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POST Results</title>
+    <title>POST</title>
     <style>
         * {
             margin: 0;
@@ -345,13 +344,13 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>POST Results</h1>
+            <h1>POST</h1>
             <a href="/" class="back-button">← Back</a>
         </div>
 
         <div id="loading" class="loading">
             <div class="spinner"></div>
-            <p>Processing POST request...</p>
+            <p>Processing request...</p>
         </div>
 
         <div id="results-container"></div>
@@ -394,14 +393,10 @@
 
         function createMediaPreview(data, endpoint) {
             let preview = '';
-
-            // Handle images from various APIs
             if (data.cover || data.thumb || data.image || data.avatar_url || data.icon) {
                 const imgUrl = data.cover || data.thumb || data.image || data.avatar_url || data.icon;
                 preview += `<div class="media-preview"><img src="${imgUrl}" alt="Preview" onerror="this.style.display='none'"></div>`;
             }
-
-            // Handle image arrays (from txt2img, etc.)
             if (data.images && Array.isArray(data.images)) {
                 data.images.forEach(img => {
                     const imgUrl = typeof img === 'string' ? img : img.url || img.src;
@@ -411,7 +406,6 @@
                 });
             }
 
-            // Handle results array with images
             if (data.results && Array.isArray(data.results)) {
                 data.results.forEach(item => {
                     if (item.urls) {
@@ -422,7 +416,6 @@
                 });
             }
 
-            // Handle audio/video
             if (data.mp3) {
                 preview += `<div class="media-preview"><audio controls><source src="${data.mp3}" type="audio/mpeg"></audio></div>`;
             }
@@ -431,8 +424,6 @@
                 const videoUrl = data.mp4 || data.video;
                 preview += `<div class="media-preview"><video controls><source src="${videoUrl}" type="video/mp4"></video></div>`;
             }
-
-            // Handle video arrays
             if (data.videos && Array.isArray(data.videos)) {
                 data.videos.forEach(video => {
                     preview += `<div class="media-preview"><video controls><source src="${video}" type="video/mp4"></video></div>`;
@@ -455,7 +446,6 @@
         function displayResults(data, endpoint, requestBody) {
             const container = document.getElementById('results-container');
             const loading = document.getElementById('loading');
-
             loading.style.display = 'none';
 
             try {
@@ -472,7 +462,6 @@
                 const apiUrl = window.location.origin + endpoint;
                 const responseJson = JSON.stringify(data, null, 2);
                 const requestBodyJson = JSON.stringify(requestBody, null, 2);
-                
                 let content = `
                     <div class="result-card">
                         <div class="result-header">
@@ -546,11 +535,9 @@
             section.classList.toggle('expanded');
         }
 
-        // Get parameters from URL
         const urlParams = new URLSearchParams(window.location.search);
         const endpoint = urlParams.get('endpoint');
         const params = urlParams.get('params');
-        
         if (endpoint && params) {
             const requestBody = JSON.parse(decodeURIComponent(params));
             
