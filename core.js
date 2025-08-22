@@ -13,6 +13,34 @@ app.use(express.json());
 const { createHash, randomUUID } = require('crypto');
 const FormData = require('form-data');
 
+app.get("/unsplash/:query", async (req, res) => {
+  try {
+    const { query } = req.params;
+    const { page = 1, per_page = 5 } = req.query;
+
+    const url = `https://api.unsplash.com/search/photos?query=${query}&page=${page}&per_page=${per_page}&client_id=JOioO8aPCAsnu3-AksI7qjO0PZtzVtyMasRg9E4fd0c`;
+    const response = await fetch(url);
+    const data = await response.json();
+    const results = data.results.map(p => ({
+      id: p.id,
+      desc: p.alt_description || "No description",
+      urls: {
+        raw: p.urls.raw,
+        full: p.urls.full,
+        regular: p.urls.regular,
+        small: p.urls.small,
+        thumb: p.urls.thumb
+      },
+      author: p.user.name,
+      profile: p.user.links.html
+    }));
+
+    res.json({ success: true, page, per_page, total: data.total, results });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 
 app.get('/ephoto/cityEffect', async (req, res) => {
   const { imageUrl } = req.query;
