@@ -443,13 +443,11 @@
                 }
             }
 
-            // Handle images from various APIs
             if (data.cover || data.thumb || data.image || data.avatar_url || data.icon) {
                 const imgUrl = data.cover || data.thumb || data.image || data.avatar_url || data.icon;
                 preview += `<div class="media-preview"><img src="${imgUrl}" alt="Preview" onerror="this.style.display='none'"></div>`;
             }
 
-            // Handle image arrays (from txt2img, unsplash, etc.)
             if (data.images && Array.isArray(data.images)) {
                 data.images.forEach(img => {
                     const imgUrl = typeof img === 'string' ? img : img.url || img.src;
@@ -459,25 +457,20 @@
                 });
             }
 
-            // Handle results array with images
             if (data.results && Array.isArray(data.results)) {
                 data.results.forEach(item => {
                     if (item.urls) {
-                        // Unsplash format
                         preview += `<div class="media-preview"><img src="${item.urls.small || item.urls.regular}" alt="${item.desc || 'Image'}" onerror="this.style.display='none'"></div>`;
                     } else if (typeof item === 'string' && (item.includes('http') || item.includes('data:'))) {
-                        // Direct image URLs
                         preview += `<div class="media-preview"><img src="${item}" alt="Image" onerror="this.style.display='none'"></div>`;
                     }
                 });
             }
 
-            // Handle audio
             if (data.mp3) {
                 preview += `<div class="media-preview"><audio controls><source src="${data.mp3}" type="audio/mpeg"></audio></div>`;
             }
             
-            // Handle video
             if (data.mp4) {
                 preview += `<div class="media-preview"><video controls><source src="${data.mp4}" type="video/mp4"></video></div>`;
             }
@@ -485,7 +478,6 @@
                 preview += `<div class="media-preview"><video controls><source src="${data.video}" type="video/mp4"></video></div>`;
             }
 
-            // Handle video arrays (TikTok, etc.)
             if (data.videos && Array.isArray(data.videos)) {
                 data.videos.forEach(video => {
                     preview += `<div class="media-preview"><video controls><source src="${video}" type="video/mp4"></video></div>`;
