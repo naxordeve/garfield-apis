@@ -17,6 +17,35 @@ const express = require("express");
 const axios = require("axios");
 
 
+app.post("/ai/chatgpt_3.5_scr1", async (req, res) => {
+  try {
+    const messages = req.body.messages;
+    const prompt = req.body.prompt || "Be a helpful assistant";
+
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ success: false, errors: ["invalid array messages input!"], owner: "naxordeve" });
+    }
+
+    const response = await axios.post(
+      "https://chatbot-ji1z.onrender.com/chatbot-ji1z",
+      {
+        messages: [
+          ...(messages[0]?.role === "system" ? [] : [{ role: "system", content: prompt }]),
+          ...messages
+        ]
+      }
+    );
+
+    if (!response.data?.choices?.[0]?.message) {
+      return res.status(500).json({ success: false, errors: ["failed to get AI response"], owner: "naxordeve" });
+    }
+
+    res.json({ success: true, answer: response.data.choices[0].message.content, owner: "naxordeve" });
+  } catch (e) {
+    res.status(500).json({ success: false, errors: [e.toString()], owner: "naxordeve" });
+  }
+});
+
 app.post("/ai/cody", async (req, res) => {
   const msg = req.body.message;
   if (!msg) return res.status(400).json({ success: false, error: "missing message" });
