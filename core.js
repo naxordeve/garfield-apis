@@ -13,6 +13,44 @@ app.use(express.json());
 const { createHash, randomUUID } = require('crypto');
 const FormData = require('form-data');
 
+
+async function instaSave(url) {
+  const u = 'https://insta-save.net/content.php';
+  const r = await fetch(`${u}?url=${url}`, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0',
+      'Referer': 'https://insta-save.net/'
+    }
+  });
+
+  const j = await r.json();
+  if (j.status !== 'ok') throw new Error('Failed to fetch content');
+  const $ = cheerio.load(j.html);
+  const el = $('#download_content .col-md-4.position-relative').first();
+  const jpg = el.find('img.load').attr('src') || el.find('img').attr('src') || null;
+  const mp4 = el.find('a.btn.bg-gradient-success').attr('href') || null;
+  const description = el.find('p.text-sm').text().trim() || null;
+  const profileName = el.find('p.text-sm a').text().trim() || null;
+
+  const stats = el.find('.stats small').toArray().map(s => $(s).text().trim());
+  const likes = stats[0] || null;
+  const comments = stats[1] || null;
+  const timeAgo = stats[2] || null;
+
+  return { owner: 'naxordeve', JPEG: jpg, MP4: mp4, likes, comments, description, profileName, timeAgo };
+}
+
+app.get('/download/insta', async (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).json({ error: 'Missing URL parameter' });
+  try {
+    const data = await instaSave(url);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get("/unsplash/:query", async (req, res) => {
   try {
     const { query } = req.params;
