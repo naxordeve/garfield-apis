@@ -14,6 +14,44 @@ const { createHash, randomUUID } = require('crypto');
 const FormData = require('form-data');
 app.use(express.urlencoded({ extended: true }));
 
+
+async function translateToEnglish(text) {
+  const url = "https://translate.googleapis.com/translate_a/single";
+  const params = { client: "gtx", sl: "auto", tl: "en", dt: "t", q: text };
+  const res = await axios.get(url, { params });
+  return res.data[0][0][0];
+}
+
+async function generateImageBuffer(prompt) {
+  const translated = await translateToEnglish(prompt);
+
+  const form = new FormData();
+  form.append("prompt", translated);
+  form.append("input_image_type", "text2image");
+  form.append("aspect_ratio", "4x5");
+  form.append("guidance_scale", "9.5");
+  form.append("controlnet_conditioning_scale", "0.5");
+  const response = await axios.post(
+    "https://api.creartai.com/api/v2/text2image",
+    form,
+    { headers: form.getHeaders(), responseType: "arraybuffer" }
+  );
+
+  return Buffer.from(response.data);
+}
+
+app.get("/media/generate", async (req, res) => {
+  const prompt = req.query.prompt;
+  if (!prompt) return res.status(400).send("Prompt is required");
+  try {const imb = await generateImageBuffer(prompt);
+  res.setHeader("Content-Type", "image/png");      
+  res.send(imb);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
+
 app.post('/download/tiktok', async (req, res) => {
   const url = req.body.url;
   if (!url) return res.status(400).json({ success: false, message: "Missing TikTok URL" });
