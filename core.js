@@ -11,7 +11,132 @@ const cheerio = require("cheerio");
 const qs = require("querystring");
 app.use(express.json());
 const { createHash, randomUUID } = require('crypto');
+const FormData = require('form-data');
 
+
+// ======================== SINGLE TEXT STYLES ========================
+
+// Reflected Neon
+app.get('/textpro/reflectedNeon', async (req, res) => {
+  const { text } = req.query;
+  if (!text) return res.status(400).json({ error: 'Missing text' });
+
+  const url = 'https://textpro.me/create-online-reflected-neon-text-effect-1157.html';
+  const form = new FormData();
+  form.append('text[]', text);
+
+  const response = await fetch(url, { method: 'POST', body: form });
+  const html = await response.text();
+  const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
+  if (!match) return res.status(500).json({ error: 'Failed to extract image' });
+
+  res.json({ success: true, image: match[1] });
+});
+
+// Neon Text
+app.get('/textpro/neon', async (req, res) => {
+  const { text } = req.query;
+  if (!text) return res.status(400).json({ error: 'Missing text' });
+
+  const url = 'https://textpro.me/create-neon-text-effect-online-1071.html';
+  const form = new FormData();
+  form.append('text[]', text);
+
+  const response = await fetch(url, { method: 'POST', body: form });
+  const html = await response.text();
+  const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
+  if (!match) return res.status(500).json({ error: 'Failed to extract image' });
+
+  res.json({ success: true, image: match[1] });
+});
+
+// Metallic Text
+app.get('/textpro/metallic', async (req, res) => {
+  const { text } = req.query;
+  if (!text) return res.status(400).json({ error: 'Missing text' });
+
+  const url = 'https://textpro.me/create-metal-text-effect-online-1067.html';
+  const form = new FormData();
+  form.append('text[]', text);
+
+  const response = await fetch(url, { method: 'POST', body: form });
+  const html = await response.text();
+  const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
+  if (!match) return res.status(500).json({ error: 'Failed to extract image' });
+
+  res.json({ success: true, image: match[1] });
+});
+
+// Marvel Studios Logo
+app.get('/textpro/marvel', async (req, res) => {
+  const { text } = req.query;
+  if (!text) return res.status(400).json({ error: 'Missing text' });
+
+  const url = 'https://textpro.me/create-logo-style-marvel-studios-online-971.html';
+  const form = new FormData();
+  form.append('text[]', text);
+
+  const response = await fetch(url, { method: 'POST', body: form });
+  const html = await response.text();
+  const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
+  if (!match) return res.status(500).json({ error: 'Failed to extract image' });
+
+  res.json({ success: true, image: match[1] });
+});
+
+// Black & White Bear Mascot Logo
+app.get('/textpro/bearLogo', async (req, res) => {
+  const { text } = req.query;
+  if (!text) return res.status(400).json({ error: 'Missing text' });
+
+  const url = 'https://textpro.me/online-black-and-white-bear-mascot-logo-creation-1012.html';
+  const form = new FormData();
+  form.append('text[]', text);
+
+  const response = await fetch(url, { method: 'POST', body: form });
+  const html = await response.text();
+  const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
+  if (!match) return res.status(500).json({ error: 'Failed to extract image' });
+
+  res.json({ success: true, image: match[1] });
+});
+
+// Light Glow Sliced Text Effect
+app.get('/textpro/lightGlowSliced', async (req, res) => {
+  const { text } = req.query;
+  if (!text) return res.status(400).json({ error: 'Missing text' });
+
+  const url = 'https://textpro.me/create-light-glow-sliced-text-effect-online-1068.html';
+  const form = new FormData();
+  form.append('text[]', text);
+
+  const response = await fetch(url, { method: 'POST', body: form });
+  const html = await response.text();
+  const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
+  if (!match) return res.status(500).json({ error: 'Failed to extract image' });
+
+  res.json({ success: true, image: match[1] });
+});
+
+// ======================== TEXT STYLES ========================
+
+// Glitch Text Effect
+app.get('/textpro/glitch2', async (req, res) => {
+  const { text1, text2 } = req.query;
+  if (!text1 || !text2) return res.status(400).json({ error: 'Missing text1 or text2' });
+
+  const url = 'https://textpro.me/create-a-glitch-text-effect-online-free-1026.html';
+  const form = new FormData();
+  form.append('text[]', text1);
+  form.append('text[]', text2);
+
+  const response = await fetch(url, { method: 'POST', body: form });
+  const html = await response.text();
+  const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
+  if (!match) return res.status(500).json({ error: 'Failed to extract image' });
+
+  res.json({ success: true, image: match[1] });
+});
 app.get("/tools/fancytext", (req, res) => {
   const { text } = req.query;
   if (!text) return res.status(400).json({ owner: "naxordeve", error: "Provide text, eg: ?text=Hello" });
