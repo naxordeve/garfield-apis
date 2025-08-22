@@ -177,8 +177,6 @@ function executePinterestSearch() {
     if (!query) return alert('Please enter a search query');
     showResults('/search/pinterest', { q: query });
 }
-
-// Media functions
 function executeTxt2Img() {
     const prompt = document.getElementById('txt2img-prompt').value.trim();
     if (!prompt) return alert('Please enter an image prompt');
@@ -190,8 +188,6 @@ function executeTxt2Img() {
     
     const payload = { prompt };
     const url = `/post-results.html?endpoint=${encodeURIComponent('/media/txt2img')}&params=${encodeURIComponent(JSON.stringify(payload))}`;
-    
-    // Reset button after a short delay
     setTimeout(() => {
         button.textContent = originalText;
         button.disabled = false;
@@ -249,7 +245,6 @@ function executeTikTokDownload() {
     window.open(postUrl, '_blank');
 }
 
-// Utility functions
 function executeFancyText() {
     const text = document.getElementById('fancy-text').value.trim();
     if (!text) return alert('Please enter text');
@@ -274,12 +269,10 @@ function executeLyricsSearch() {
     showResults('/search/lyrics', { q: query });
 }
 
-// Extended AI functions
 function executeChatGPT() {
     const messagesText = document.getElementById('chatgpt-messages').value.trim();
     const prompt = document.getElementById('chatgpt-prompt').value.trim();
     if (!messagesText) return alert('Please enter messages');
-    
     const button = event.target;
     const originalText = button.textContent;
     
