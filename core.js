@@ -12,6 +12,50 @@ const qs = require("querystring");
 app.use(express.json());
 const { createHash, randomUUID } = require('crypto');
 const FormData = require('form-data');
+app.use(express.urlencoded({ extended: true }));
+
+async function pindl(pinUrl) {
+  try {
+    const initRes = await fetch("https://www.expertstool.com/download-pinterest-video/");
+    const setCookie = initRes.headers.get("set-cookie");
+    if (!setCookie) throw new Error("Cookie tidak ditemukan.");
+
+    const response = await fetch("https://www.expertstool.com/download-pinterest-video/", {
+      method: "POST",
+      headers: {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Cookie": setCookie,
+        "Referer": "https://www.expertstool.com/download-pinterest-video/",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "sec-ch-ua": '"Chromium";v="139", "Not;A=Brand";v="99"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"Linux"',
+      },
+      body: new URLSearchParams({ url: pinUrl })
+    });
+
+    if (!response.ok) throw new Error("Gagal mendapatkan respon dari API.");
+
+    const html = await response.text();
+    const $ = cheerio.load(html);
+    const downloadLink = $("a[download]").attr("href") || "";
+
+    return { status: 200, url: downloadLink, owner: "naxordeve" };
+  } catch (error) {
+    console.error("Gagal fetch.", error.message);
+    return { status: 500, error: error.message, owner: "naxordeve" };
+  }
+}
+
+app.get("/download/pinterest", async (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).json({ status: 400, error: "Missing 'url' query parameter", owner: "naxordeve" });
+
+  const result = await pindl(url);
+  res.json(result);
+});
+
 
 
 async function instaSave(url) {
