@@ -13,6 +13,28 @@ app.use(express.json());
 const { createHash, randomUUID } = require('crypto');
 const FormData = require('form-data');
 
+
+app.get('/ephoto/cityEffect', async (req, res) => {
+  const { imageUrl } = req.query;
+  if (!imageUrl) return res.status(400).json({ error: 'Missing imageUrl parameter' });
+  try {
+    const url = 'https://ephoto360.com/hieu-ung-ve/tao-hieu-ung-anh-thanh-pho-12.html';
+    const form = new FormData();
+    form.append('image', imageUrl); // send URL instead of file
+
+    const response = await fetch(url, { method: 'POST', body: form });
+    const html = await response.text();
+
+    const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
+    if (!match) return res.status(500).json({ error: 'Failed to extract image' });
+
+    res.json({ success: true, image: match[1] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 //hand Cam Effec
 app.get('/ephoto/handCamEffect', async (req, res) => {
   const { imageUrl } = req.query;
