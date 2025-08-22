@@ -13,6 +13,44 @@ app.use(express.json());
 const { createHash, randomUUID } = require('crypto');
 const FormData = require('form-data');
 app.use(express.urlencoded({ extended: true }));
+const express = require("express");
+const axios = require("axios");
+
+const ip = () => {
+  const r = (n) => (Math.random() * n).toFixed();
+  return `${r(300)}.${r(300)}.${r(300)}.${r(300)}`;
+};
+
+app.post("/media/txt2img", async (req, res) => {
+  const p = req.body.prompt;
+  if (!p) return res.status(400).json({ success: false, error: "missing prompt" });
+
+  try {
+    const r = await axios.post(
+      "https://internal.users.n8n.cloud/webhook/ai_image_generator",
+      { prompt: p },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": "Zanixon/1.0.0",
+          "X-Client-Ip": ip(),
+        },
+      }
+    );
+
+    const d = r.data;
+    if (!d.result) throw "failed generating image";
+
+    res.json({
+      success: true,
+      owner: "naxordeve",
+      images: d.result,
+    });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.toString() });
+  }
+});
+
 
 async function pindl(pinUrl) {
   try {
@@ -123,320 +161,6 @@ app.get("/unsplash/:query", async (req, res) => {
   }
 });
 
-
-app.get('/ephoto/cityEffect', async (req, res) => {
-  const { imageUrl } = req.query;
-  if (!imageUrl) return res.status(400).json({ error: 'Missing imageUrl parameter' });
-  try {
-    const url = 'https://ephoto360.com/hieu-ung-ve/tao-hieu-ung-anh-thanh-pho-12.html';
-    const form = new FormData();
-    form.append('image', imageUrl); // send URL instead of file
-
-    const response = await fetch(url, { method: 'POST', body: form });
-    const html = await response.text();
-
-    const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
-    if (!match) return res.status(500).json({ error: 'Failed to extract image' });
-
-    res.json({ success: true, image: match[1] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-
-//hand Cam Effec
-app.get('/ephoto/handCamEffect', async (req, res) => {
-  const { imageUrl } = req.query;
-  if (!imageUrl) return res.status(400).json({ error: 'Missing imageUrl parameter' });
-
-  try {
-    const url = 'https://ephoto360.com/hieu-ung-ve/hieu-ung-anh-chi-tay-cam-10.html';
-    const form = new FormData();
-    form.append('image', imageUrl);
-
-    const response = await fetch(url, { method: 'POST', body: form });
-    const html = await response.text();
-    const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
-
-    if (!match) return res.status(500).json({ error: 'Failed to extract image' });
-    res.json({ success: true, image: match[1] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-//Fiora LoL
-app.get('/ephoto/lolFiora', async (req, res) => {
-  const { imageUrl } = req.query;
-  if (!imageUrl) return res.status(400).json({ error: 'Missing imageUrl parameter' });
-
-  try {
-    const url = 'https://ephoto360.com/hieu-ung-game/cover-lol-tuong-fiora-43.html';
-    const form = new FormData();
-    form.append('image', imageUrl);
-
-    const response = await fetch(url, { method: 'POST', body: form });
-    const html = await response.text();
-    const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
-
-    if (!match) return res.status(500).json({ error: 'Failed to extract image' });
-    res.json({ success: true, image: match[1] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-//Free Fire
-app.get('/ephoto/freeFire', async (req, res) => {
-  const { name } = req.query;
-  if (!name) return res.status(400).json({ error: 'Missing name parameter' });
-  try {
-    const url = 'https://ephoto360.com/tao-anh-bia-cover-game-free-fire-voi-ten-cua-ban-644.html';
-    const form = new FormData();
-    form.append('text[]', name);
-
-    const response = await fetch(url, { method: 'POST', body: form });
-    const html = await response.text();
-    const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
-
-    if (!match) return res.status(500).json({ error: 'Failed to extract image' });
-    res.json({ success: true, image: match[1] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Galaxy LoL Cover
-app.get('/ephoto/galaxyLolCover', async (req, res) => {
-  const { champ, name } = req.query;
-  if (!champ || !name) return res.status(400).json({ error: 'Missing champ or name parameter' });
-
-  try {
-    const url = 'https://ephoto360.com/hieu-ung-game/tao-cover-lol-phong-cach-galaxy-cuc-chat-344.html';
-    const form = new FormData();
-    form.append('text[]', champ);
-    form.append('text[]', name);
-
-    const response = await fetch(url, { method: 'POST', body: form });
-    const html = await response.text();
-    const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
-
-    if (!match) return res.status(500).json({ error: 'Failed to extract image' });
-    res.json({ success: true, image: match[1] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Liên Quân Mastery
-app.get('/ephoto/aqMasteryCover', async (req, res) => {
-  const { mastery, name } = req.query;
-  if (!mastery || !name) return res.status(400).json({ error: 'Missing mastery or name parameter' });
-
-  try {
-    const url = 'https://ephoto360.com/hieu-ung-game/tao-cover-lien-quan-theo-thong-thao-tuong-360.html';
-    const form = new FormData();
-    form.append('text[]', mastery);
-    form.append('text[]', name);
-
-    const response = await fetch(url, { method: 'POST', body: form });
-    const html = await response.text();
-    const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
-
-    if (!match) return res.status(500).json({ error: 'Failed to extract image' });
-    res.json({ success: true, image: match[1] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// PUBG Black & White Logo
-app.get('/ephoto/pubgBwLogo', async (req, res) => {
-  const { left, right } = req.query;
-  if (!left || !right) return res.status(400).json({ error: 'Missing left or right parameter' });
-
-  try {
-    const url = 'https://ephoto360.com/tao-logo-pubg-truc-tuyen-phong-cach-den-trang-715.html';
-    const form = new FormData();
-    form.append('text[]', left);
-    form.append('text[]', right);
-
-    const response = await fetch(url, { method: 'POST', body: form });
-    const html = await response.text();
-    const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
-
-    if (!match) return res.status(500).json({ error: 'Failed to extract image' });
-    res.json({ success: true, image: match[1] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-//PUBG Chibi
-app.get('/ephoto/pubgChibiLogo', async (req, res) => {
-  const { left, right } = req.query;
-  if (!left || !right) return res.status(400).json({ error: 'Missing left or right parameter' });
-
-  try {
-    const url = 'https://ephoto360.com/tao-logo-pubg-phong-cach-chibi-online-721.html';
-    const form = new FormData();
-    form.append('text[]', left);
-    form.append('text[]', right);
-
-    const response = await fetch(url, { method: 'POST', body: form });
-    const html = await response.text();
-    const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
-
-    if (!match) return res.status(500).json({ error: 'Failed to extract image' });
-    res.json({ success: true, image: match[1] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.get('/ephoto/dtcl', async (req, res) => {
-  const { name } = req.query;
-  if (!name) return res.status(400).json({ error: 'Missing name parameter' });
-  try {
-    const url = 'https://ephoto360.com/tao-avatar-dau-truong-chan-ly-dtcl-theo-ten-cuc-chat-616.html';
-    const form = new FormData();
-    form.append('text[]', name);
-    const response = await fetch(url, { method: 'POST', body: form });
-    const html = await response.text();
-    const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
-
-    if (!match) return res.status(500).json({ error: 'Failed to extract image' });
-    res.json({ success: true, image: match[1] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-
-// ======================== TEXT STYLES ========================
-
-// Reflected Neon
-app.get('/textpro/reflectedNeon', async (req, res) => {
-  const { text } = req.query;
-  if (!text) return res.status(400).json({ error: 'Missing text' });
-
-  const url = 'https://textpro.me/create-online-reflected-neon-text-effect-1157.html';
-  const form = new FormData();
-  form.append('text[]', text);
-
-  const response = await fetch(url, { method: 'POST', body: form });
-  const html = await response.text();
-  const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
-  if (!match) return res.status(500).json({ error: 'Failed to extract image' });
-
-  res.json({ success: true, image: match[1] });
-});
-
-// Neon Text
-app.get('/textpro/neon', async (req, res) => {
-  const { text } = req.query;
-  if (!text) return res.status(400).json({ error: 'Missing text' });
-
-  const url = 'https://textpro.me/create-neon-text-effect-online-1071.html';
-  const form = new FormData();
-  form.append('text[]', text);
-
-  const response = await fetch(url, { method: 'POST', body: form });
-  const html = await response.text();
-  const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
-  if (!match) return res.status(500).json({ error: 'Failed to extract image' });
-
-  res.json({ success: true, image: match[1] });
-});
-
-// Metallic Text
-app.get('/textpro/metallic', async (req, res) => {
-  const { text } = req.query;
-  if (!text) return res.status(400).json({ error: 'Missing text' });
-
-  const url = 'https://textpro.me/create-metal-text-effect-online-1067.html';
-  const form = new FormData();
-  form.append('text[]', text);
-
-  const response = await fetch(url, { method: 'POST', body: form });
-  const html = await response.text();
-  const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
-  if (!match) return res.status(500).json({ error: 'Failed to extract image' });
-
-  res.json({ success: true, image: match[1] });
-});
-
-// Marvel Studios Logo
-app.get('/textpro/marvel', async (req, res) => {
-  const { text } = req.query;
-  if (!text) return res.status(400).json({ error: 'Missing text' });
-
-  const url = 'https://textpro.me/create-logo-style-marvel-studios-online-971.html';
-  const form = new FormData();
-  form.append('text[]', text);
-
-  const response = await fetch(url, { method: 'POST', body: form });
-  const html = await response.text();
-  const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
-  if (!match) return res.status(500).json({ error: 'Failed to extract image' });
-
-  res.json({ success: true, image: match[1] });
-});
-
-// Black & White Bear Mascot Logo
-app.get('/textpro/bearLogo', async (req, res) => {
-  const { text } = req.query;
-  if (!text) return res.status(400).json({ error: 'Missing text' });
-
-  const url = 'https://textpro.me/online-black-and-white-bear-mascot-logo-creation-1012.html';
-  const form = new FormData();
-  form.append('text[]', text);
-
-  const response = await fetch(url, { method: 'POST', body: form });
-  const html = await response.text();
-  const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
-  if (!match) return res.status(500).json({ error: 'Failed to extract image' });
-
-  res.json({ success: true, image: match[1] });
-});
-
-// Light Glow Sliced Text Effect
-app.get('/textpro/lightGlowSliced', async (req, res) => {
-  const { text } = req.query;
-  if (!text) return res.status(400).json({ error: 'Missing text' });
-
-  const url = 'https://textpro.me/create-light-glow-sliced-text-effect-online-1068.html';
-  const form = new FormData();
-  form.append('text[]', text);
-
-  const response = await fetch(url, { method: 'POST', body: form });
-  const html = await response.text();
-  const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
-  if (!match) return res.status(500).json({ error: 'Failed to extract image' });
-
-  res.json({ success: true, image: match[1] });
-});
-
-// ======================== TEXT STYLES ========================
-
-// Glitch Text Effect
-app.get('/textpro/glitch2', async (req, res) => {
-  const { text1, text2 } = req.query;
-  if (!text1 || !text2) return res.status(400).json({ error: 'Missing text1 or text2' });
-
-  const url = 'https://textpro.me/create-a-glitch-text-effect-online-free-1026.html';
-  const form = new FormData();
-  form.append('text[]', text1);
-  form.append('text[]', text2);
-
-  const response = await fetch(url, { method: 'POST', body: form });
-  const html = await response.text();
-  const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
-  if (!match) return res.status(500).json({ error: 'Failed to extract image' });
-
-  res.json({ success: true, image: match[1] });
-});
 app.get("/tools/fancytext", (req, res) => {
   const { text } = req.query;
   if (!text) return res.status(400).json({ owner: "naxordeve", error: "Provide text, eg: ?text=Hello" });
