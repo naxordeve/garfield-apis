@@ -16,6 +16,63 @@ app.use(express.urlencoded({ extended: true }));
 const express = require("express");
 const axios = require("axios");
 
+app.post('/download/tiktok', async (req, res) => {
+  const url = req.body.url;
+  if (!url) return res.status(400).json({ success: false, message: "Missing TikTok URL" });
+  try {const postData = qs.stringify({ q: url, lang: 'id' });
+    const response = await axios.post(
+      'https://tikdownloader.io/api/ajaxSearch',
+      postData,
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'Accept': '*/*',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      }
+    );
+
+    const html = response.data.data;
+    const $ = cheerio.load(html);
+    const images = [];
+    $('img[src]').each((i, el) => {
+      const src = $(el).attr('src');
+      if (src) images.push(src);
+    });
+
+    const videos = [];
+    $('video').each((i, el) => {
+      const src = $(el).attr('data-src') || $(el).attr('src');
+      if (src) videos.push(src);
+    });
+
+    const downloads = [];
+    $('a[href]').each((i, el) => {
+      const href = $(el).attr('href');
+      if (href && href.includes('dl.snapcdn.app')) downloads.push(href);
+    });
+
+    res.json({
+      success: true,
+      owner: 'naxordeve',
+      images,
+      videos,
+      downloads
+    });
+
+  } catch (error) {
+    res.json({
+      success: false,
+      owner: 'naxordeve',
+      images: [],
+      videos: [],
+      downloads: [],
+      errors: [error.toString()]
+    });
+  }
+});
+
+
 
 app.post("/ai/chatgpt_3.5_scr1", async (req, res) => {
   try {
