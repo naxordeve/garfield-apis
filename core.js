@@ -13,8 +13,6 @@ app.use(express.json());
 const { createHash, randomUUID } = require('crypto');
 const FormData = require('form-data');
 app.use(express.urlencoded({ extended: true }));
-const express = require("express");
-const axios = require("axios");
 
 app.post('/download/tiktok', async (req, res) => {
   const url = req.body.url;
