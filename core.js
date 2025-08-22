@@ -16,6 +16,46 @@ app.use(express.urlencoded({ extended: true }));
 const express = require("express");
 const axios = require("axios");
 
+
+app.post("/ai/cody", async (req, res) => {
+  const msg = req.body.message;
+  if (!msg) return res.status(400).json({ success: false, error: "missing message" });
+  try {
+    const init = await axios.post(
+      "https://cody.md/api/chat/init",
+      null,
+      {
+        headers: {
+          cookie: "identityId=us-east-1:cb37616b-3195-cceb-4cf1-f75d3d93b0c8; secretAccessKey=DWcWnaaEUtPD1pyIp1bXEiJrp5hkDoFH21WnrHoL7; accessKeyId=ASIA4WN3BNMY7J5QN5F6;"
+        }
+      }
+    );
+
+    const token = init.data.token;
+    if (!token) throw "bearer token not found!";
+    const r = await axios.post(
+      "https://api.cody.md/ask",
+      {
+        input: msg,
+        files: [],
+        profile: { country: "ID" }
+      },
+      {
+        headers: { authorization: token }
+      }
+    );
+
+    const body = r.data;
+    if (!body) throw "failed get response";
+
+    res.json({ success: true, owner: "naxordeve", answer: body });
+
+  } catch (e) {
+    res.status(500).json({ success: false, errors: [e.toString()] });
+  }
+});
+
+
 app.post("/ai/gpt4o", async (req, res) => {
   const prompt = req.body.prompt || "Hello, who are you?";
   const options = {
