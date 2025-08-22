@@ -13,8 +13,176 @@ app.use(express.json());
 const { createHash, randomUUID } = require('crypto');
 const FormData = require('form-data');
 
+//hand Cam Effec
+app.get('/ephoto/handCamEffect', async (req, res) => {
+  const { imageUrl } = req.query;
+  if (!imageUrl) return res.status(400).json({ error: 'Missing imageUrl parameter' });
 
-// ======================== SINGLE TEXT STYLES ========================
+  try {
+    const url = 'https://ephoto360.com/hieu-ung-ve/hieu-ung-anh-chi-tay-cam-10.html';
+    const form = new FormData();
+    form.append('image', imageUrl);
+
+    const response = await fetch(url, { method: 'POST', body: form });
+    const html = await response.text();
+    const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
+
+    if (!match) return res.status(500).json({ error: 'Failed to extract image' });
+    res.json({ success: true, image: match[1] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+//Fiora LoL
+app.get('/ephoto/lolFiora', async (req, res) => {
+  const { imageUrl } = req.query;
+  if (!imageUrl) return res.status(400).json({ error: 'Missing imageUrl parameter' });
+
+  try {
+    const url = 'https://ephoto360.com/hieu-ung-game/cover-lol-tuong-fiora-43.html';
+    const form = new FormData();
+    form.append('image', imageUrl);
+
+    const response = await fetch(url, { method: 'POST', body: form });
+    const html = await response.text();
+    const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
+
+    if (!match) return res.status(500).json({ error: 'Failed to extract image' });
+    res.json({ success: true, image: match[1] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+//Free Fire
+app.get('/ephoto/freeFire', async (req, res) => {
+  const { name } = req.query;
+  if (!name) return res.status(400).json({ error: 'Missing name parameter' });
+  try {
+    const url = 'https://ephoto360.com/tao-anh-bia-cover-game-free-fire-voi-ten-cua-ban-644.html';
+    const form = new FormData();
+    form.append('text[]', name);
+
+    const response = await fetch(url, { method: 'POST', body: form });
+    const html = await response.text();
+    const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
+
+    if (!match) return res.status(500).json({ error: 'Failed to extract image' });
+    res.json({ success: true, image: match[1] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Galaxy LoL Cover
+app.get('/ephoto/galaxyLolCover', async (req, res) => {
+  const { champ, name } = req.query;
+  if (!champ || !name) return res.status(400).json({ error: 'Missing champ or name parameter' });
+
+  try {
+    const url = 'https://ephoto360.com/hieu-ung-game/tao-cover-lol-phong-cach-galaxy-cuc-chat-344.html';
+    const form = new FormData();
+    form.append('text[]', champ);
+    form.append('text[]', name);
+
+    const response = await fetch(url, { method: 'POST', body: form });
+    const html = await response.text();
+    const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
+
+    if (!match) return res.status(500).json({ error: 'Failed to extract image' });
+    res.json({ success: true, image: match[1] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Liên Quân Mastery
+app.get('/ephoto/aqMasteryCover', async (req, res) => {
+  const { mastery, name } = req.query;
+  if (!mastery || !name) return res.status(400).json({ error: 'Missing mastery or name parameter' });
+
+  try {
+    const url = 'https://ephoto360.com/hieu-ung-game/tao-cover-lien-quan-theo-thong-thao-tuong-360.html';
+    const form = new FormData();
+    form.append('text[]', mastery);
+    form.append('text[]', name);
+
+    const response = await fetch(url, { method: 'POST', body: form });
+    const html = await response.text();
+    const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
+
+    if (!match) return res.status(500).json({ error: 'Failed to extract image' });
+    res.json({ success: true, image: match[1] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUBG Black & White Logo
+app.get('/ephoto/pubgBwLogo', async (req, res) => {
+  const { left, right } = req.query;
+  if (!left || !right) return res.status(400).json({ error: 'Missing left or right parameter' });
+
+  try {
+    const url = 'https://ephoto360.com/tao-logo-pubg-truc-tuyen-phong-cach-den-trang-715.html';
+    const form = new FormData();
+    form.append('text[]', left);
+    form.append('text[]', right);
+
+    const response = await fetch(url, { method: 'POST', body: form });
+    const html = await response.text();
+    const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
+
+    if (!match) return res.status(500).json({ error: 'Failed to extract image' });
+    res.json({ success: true, image: match[1] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+//PUBG Chibi
+app.get('/ephoto/pubgChibiLogo', async (req, res) => {
+  const { left, right } = req.query;
+  if (!left || !right) return res.status(400).json({ error: 'Missing left or right parameter' });
+
+  try {
+    const url = 'https://ephoto360.com/tao-logo-pubg-phong-cach-chibi-online-721.html';
+    const form = new FormData();
+    form.append('text[]', left);
+    form.append('text[]', right);
+
+    const response = await fetch(url, { method: 'POST', body: form });
+    const html = await response.text();
+    const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
+
+    if (!match) return res.status(500).json({ error: 'Failed to extract image' });
+    res.json({ success: true, image: match[1] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/ephoto/dtcl', async (req, res) => {
+  const { name } = req.query;
+  if (!name) return res.status(400).json({ error: 'Missing name parameter' });
+  try {
+    const url = 'https://ephoto360.com/tao-avatar-dau-truong-chan-ly-dtcl-theo-ten-cuc-chat-616.html';
+    const form = new FormData();
+    form.append('text[]', name);
+    const response = await fetch(url, { method: 'POST', body: form });
+    const html = await response.text();
+    const match = html.match(/<img[^>]+class="final-image"[^>]+src="([^"]+)"/);
+
+    if (!match) return res.status(500).json({ error: 'Failed to extract image' });
+    res.json({ success: true, image: match[1] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// ======================== TEXT STYLES ========================
 
 // Reflected Neon
 app.get('/textpro/reflectedNeon', async (req, res) => {
