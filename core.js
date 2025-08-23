@@ -15,6 +15,26 @@ const FormData = require('form-data');
 app.use(express.urlencoded({ extended: true }));
 const me="naxordeve";
 
+app.get('/search/movie', async (req, res) => {
+  const title = req.query.title
+  if (!title) {
+    return res.json({ success: false, message: 'Missing ?title=' })
+  }
+
+  const url = `https://www.omdbapi.com/?t=${title}&apikey=294e6025`
+  try {const r = await fetch(url)
+    const data = await r.json()
+    res.json({
+      owner: 'naxordeve',
+      result: data,
+      timestamp: new Date().toISOString()
+    })
+  } catch (e) {
+    res.json({ success: false, message: 'Error fetching movie info' })
+  }
+})
+
+
 async function translate(text,to){
  try{const r=await axios.get("https://translate.googleapis.com/translate_a/single",{
    params:{client:"gtx",sl:"auto",tl:to,dt:"t",q:text}
