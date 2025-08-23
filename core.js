@@ -16,6 +16,158 @@ app.use(express.urlencoded({ extended: true }));
 const me="naxordeve";
 const crypto = require('crypto');
 
+const yt = {
+  get baseUrl() {
+    return { origin: "https://v1.yt1s.biz" }
+  },
+
+  get baseHeaders() {
+    return {
+      "accept": "application/json, text/plain, */*",
+      "accept-encoding": "gzip, deflate, br, zstd",
+      "user-agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+      origin: this.baseUrl.origin,
+    }
+  },
+
+  validateString: function (string) {
+    if (typeof string !== "string" || !string?.trim()?.length)
+      throw Error(`search query can't be empty`)
+  },
+
+  handleFormat: function (userFormat) {
+    const validFormat = [
+      "64kbps",
+      "96kbps",
+      "128kbps",
+      "256kbps",
+      "320kbps",
+      "144p",
+      "240p",
+      "360p",
+      "480p",
+      "720p",
+      "1080p",
+    ]
+    if (!validFormat.includes(userFormat))
+      throw Error(
+        `your format is invalid! just pick one of these. ${validFormat.join(", ")}`
+      )
+    const path = /p$/.test(userFormat) ? "/video" : "/audio"
+    const quality = userFormat.match(/\d+/)[0]
+    return { path, quality }
+  },
+
+  hit: async function (description, url, opts = {}, returnType = "text") {
+    const r = await fetch(url, opts)
+    if (!r.ok)
+      throw Error(
+        `${r.status} ${r.statusText} ${await r.text() || "empty response"}`
+      )
+    let data
+    if (returnType == "json") {
+      data = await r.json()
+    } else if (returnType == "text") {
+      data = await r.text()
+    } else {
+      throw Error("invalid return type")
+    }
+    return { data, headers: r.headers }
+  },
+
+  search: async function (query) {
+    this.validateString(query)
+    const api = new URL(
+      "https://me0xn4hy3i.execute-api.us-east-1.amazonaws.com/staging/api/resolve/resolveYoutubeSearch"
+    )
+    api.search = new URLSearchParams({ search: query })
+    const { data: json } = await this.hit("search", api.toString(), {}, "json")
+    return json
+  },
+
+  getSessionToken: async function () {
+    const headers = this.baseHeaders
+    const api = "https://fast.dlsrv.online/"
+    const { headers: h } = await this.hit("get session", api, { headers })
+    const result = h.get("x-session-token")
+    if (!result) throw Error("session kosong!")
+    return result
+  },
+
+  pow: function (session, path, startNonce = 0) {
+    let nonce = startNonce
+    let powHash = ""
+    while (true) {
+      const data = `${session}:${path}:${nonce}`
+      powHash = crypto.createHash("SHA256").update(data).digest("hex")
+      if (powHash.startsWith("0000")) {
+        return { nonce: nonce.toString(), powHash }
+      }
+      nonce++
+    }
+  },
+
+  apiSignature: function (session, path, timestamp) {
+    const dataToSign = `${session}:${path}:${timestamp}`
+    const secretKey = "a8d4e2456d59b90c8402fc4f060982aa"
+    return crypto
+      .createHmac("SHA256", secretKey)
+      .update(dataToSign)
+      .digest("hex")
+  },
+
+  download: async function (videoId, userFormat = "128kbps") {
+    const { path, quality } = this.handleFormat(userFormat)
+    const sessionToken = await this.getSessionToken()
+    const timestamp = Date.now().toString()
+    const signature = this.apiSignature(sessionToken, path, timestamp)
+    const { nonce, powHash } = this.pow(sessionToken, path)
+
+    const headers = {
+      "content-type": "application/json",
+      "x-api-auth":
+        "Ig9CxOQPYu3RB7GC21sOcgRPy4uyxFKTx54bFDu07G3eAMkrdVqXY9bBatu4WqTpkADrQ",
+      "x-session-token": sessionToken,
+      "x-signature": signature,
+      "x-signature-timestamp": timestamp,
+      nonce: nonce,
+      powhash: powHash,
+      ...this.baseHeaders,
+    }
+    const api = `https://fast.dlsrv.online/gateway/${path}`
+    const body = JSON.stringify({ videoId, quality })
+    const { data: result } = await this.hit(
+      "download",
+      api,
+      { headers, body, method: "post" },
+      "json"
+    )
+    return result
+  },
+  
+
+  searchAndDownload: async function (query, userFormat = "128kbps") {
+    this.validateString(query)
+    this.handleFormat(userFormat)
+    const searchResult = await this.search(query)
+    const { videoId } = searchResult?.data?.[0]
+    if (!videoId) throw Error(`cannot find video id using search!`)
+    return await this.download(videoId, userFormat)
+  },
+}
+
+app.get("/download/ytdl-ocr", async (req, res) => {
+  try {const query = req.query.q
+    const format = req.query.format || "128kbps"
+    if (!query) return res.status(400).json({ error: "Missing query ?q=" })
+    const result = await yt.searchAndDownload(query, format)
+    res.json({owner: 'naxordeve', result})
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 
 const jowo = {
   api: {
