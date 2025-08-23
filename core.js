@@ -13,7 +13,26 @@ app.use(express.json());
 const { createHash, randomUUID } = require('crypto');
 const FormData = require('form-data');
 app.use(express.urlencoded({ extended: true }));
+const me="naxordeve";
 
+async function gyt(u){
+ try{ const f=new FormData();f.append("url",u);f.append("ajax","1");f.append("lang","en");
+  const r=await axios.post("https://genyoutube.online/mates/en/analyze/ajax?retry=undefined&platform=youtube",f,{headers:f.getHeaders()});
+  const $=cheerio.load(r.data.result),b=$("button").first(),o=b.attr("onclick");if(!o)throw new Error("no onclick");
+  const m=o.match(/download\((.*)\)/);if(!m)throw new Error("no match");
+  let a=m[1].replace(/'/g,'"');const x=JSON.parse(`[${a}]`);
+  const d={url:x[0],title:x[1],id:x[2],ext:x[3],note:x[5],fmt:x[6]};
+  const f2=new FormData();f2.append("url",d.url);f2.append("title",d.title);f2.append("id",d.id);f2.append("ext",d.ext);f2.append("note",d.note);f2.append("format",d.fmt);
+  const r2=await axios.post(`https://genyoutube.online/mates/en/convert?id=${d.id}`,f2,{headers:f2.getHeaders()});
+  return{ok:true,by:me,title:d.title,url:r2.data.downloadUrlX,time:new Date().toISOString()}
+ }catch(e){return{ok:false,err:e.message,time:new Date().toISOString()}}
+}
+
+app.get("/download/ytmp3",async(req,res)=>{
+ const url=req.query.url;
+ if(!url)return res.json({ok:false,err:"no url",time:new Date().toISOString()});
+ res.json(await gyt(url));
+});
 
 async function translateToEnglish(text) {
   const url = "https://translate.googleapis.com/translate_a/single";
