@@ -15,6 +15,23 @@ const FormData = require('form-data');
 app.use(express.urlencoded({ extended: true }));
 const me="naxordeve";
 
+async function translate(text,to){
+ try{const r=await axios.get("https://translate.googleapis.com/translate_a/single",{
+   params:{client:"gtx",sl:"auto",tl:to,dt:"t",q:text}
+  });
+  const t=r.data[0].map(a=>a[0]).join("");
+  return {ok:true,owner:"naxordeve",text:t,from:r.data[2]||"auto",to,time:new Date().toISOString()};
+ }catch(e){return {ok:false,owner:"naxordeve",err:e.message,time:new Date().toISOString()}}
+}
+
+app.get("/tools/translate", async (req,res)=>{
+ const { text, to } = req.query;
+ if(!text || !to) return res.status(400).json({ok:false,owner:"naxordeve",err:"text and to are required",time:new Date().toISOString()});
+ const result = await translate(text,to);
+ res.json(result);
+});
+
+
 async function gyt(u){
  try{ const f=new FormData();f.append("url",u);f.append("ajax","1");f.append("lang","en");
   const r=await axios.post("https://genyoutube.online/mates/en/analyze/ajax?retry=undefined&platform=youtube",f,{headers:f.getHeaders()});
