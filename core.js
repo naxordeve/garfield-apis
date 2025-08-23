@@ -14,6 +14,111 @@ const { createHash, randomUUID } = require('crypto');
 const FormData = require('form-data');
 app.use(express.urlencoded({ extended: true }));
 const me="naxordeve";
+const crypto = require('crypto');
+
+
+const jowo = {
+  api: {
+    base: 'https://us-drama-api.pixtv.cc',
+    endpoints: {
+      init: '/Android/Users/init',
+      list: '/Android/VideoCenter/getVideoList',
+      drama: '/Android/VideoCenter/getVideoDrama'
+    }
+  },
+  blockMap: { selected: 1, hot: 5, new: 6, male: 7, female: 8, original: 9 },
+  headers: {
+    'user-agent': 'NB Android/1.0.0',
+    'accept-encoding': 'gzip',
+    'content-type': 'application/json'
+  },
+  userCache: null,
+  deviceCache: null,
+  generateDevice: () => {
+    const brands = { Oppo: ['CPH2699'], Xiaomi: ['2407FPN8EG'], Samsung: ['SM-A566V'], Realme: ['RMX3562'] };
+    const versions = ['12','13','14'];
+    const brand = Object.keys(brands)[Math.floor(Math.random() * 4)];
+    const model = brands[brand][0];
+    const version = versions[Math.floor(Math.random() * versions.length)];
+    return {
+      aid: [...Array(16)].map(() => Math.random().toString(36)[2]).join(''),
+      gaid: crypto.randomUUID(),
+      systemversion: `${brand}|${model}|${version}`
+    };
+  },
+  init: async function () {
+    if (this.userCache) return this.userCache;
+    this.deviceCache = this.generateDevice();
+    const headers = {
+      ...this.headers,
+      aid: this.deviceCache.aid,
+      gaid: this.deviceCache.gaid,
+      adjustgaid: '',
+      channel: 'google',
+      source: 'android',
+      version: '1.0.45',
+      vcode: '60',
+      language: 'en',
+      ts: Math.floor(Date.now() / 1000).toString(),
+      systemversion: this.deviceCache.systemversion
+    };
+    try {
+      const { data } = await axios.post(`${this.api.base}${this.api.endpoints.init}`, { aid: this.deviceCache.aid }, { headers });
+      const token = data.data.token;
+      this.userCache = { token, headers, info: data.data };
+      return this.userCache;
+    } catch {
+      return { success: false, error: 'Init failed' };
+    }
+  },
+  list: async function (category = 'hot', pageSize = 3) {
+    const user = await this.init();
+    if (!user.token) return [];
+    const headers = { ...user.headers, token: user.token, ts: Math.floor(Date.now() / 1000).toString() };
+    const blockId = this.blockMap[category];
+    if (!blockId) return [];
+    const payload = { blockId: blockId.toString(), page: '1', pageSize: pageSize.toString(), vid: '' };
+    try {
+      const { data } = await axios.post(`${this.api.base}${this.api.endpoints.list}`, payload, { headers });
+      return (data.data.list || []).map(v => ({ title: v.name, vid: v.vid, thumb: v.thumb }));
+    } catch {
+      return [];
+    }
+  },
+  drama: async function (vid, maxEpisodes = 3) {
+    if (!vid) return [];
+    const user = await this.init();
+    if (!user.token) return [];
+    const headers = { ...user.headers, token: user.token, ts: Math.floor(Date.now() / 1000).toString() };
+    try {
+      const { data } = await axios.post(`${this.api.base}${this.api.endpoints.drama}`, { vid }, { headers });
+      return (data.data.list || []).slice(0, maxEpisodes).map(ep => ({ episode: ep.dramaNum, url: ep.playUrl }));
+    } catch {
+      return [];
+    }
+  }
+};
+
+app.get('/movie/drama', async (req, res) => {
+  const category = req.query.category || 'hot';
+  const limit = parseInt(req.query.limit) || 3;
+  const videos = await jowo.list(category, limit);
+  const episodesList = await Promise.all(videos.map(async v => ({
+    vid: v.vid,
+    title: v.title,
+    thumb: v.thumb,
+    episodes: await jowo.drama(v.vid, 3) // top 3 episodes only
+  })));
+
+  res.json({
+    success: true,
+    owner: 'naxordeve',
+    category,
+    limit,
+    results: episodesList
+  });
+});
+
 
 app.get('/search/movie', async (req, res) => {
   const title = req.query.title
