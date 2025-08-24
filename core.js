@@ -16,6 +16,44 @@ app.use(express.urlencoded({ extended: true }));
 const me="naxordeve";
 const crypto = require('crypto');
 
+
+app.get("/download/uptodown", async (req, res) => {
+  const query = req.query.q;
+  if (!query) return res.status(400).json({ error: "Missing query parameter q" });
+  try { const baseUrl = "https://id.uptodown.com";
+    const searchRes = await axios.post(baseUrl + "/android/search", { q: query });
+    const $ = cheerio.load(searchRes.data);
+    const firstApp = $(".content .name a").first();
+    const slug = firstApp.attr("href").replace("." + baseUrl.replace("https://", "") + "/android", "").replace("https://", "");
+    const detailRes = await axios.get("https://" + slug + "." + baseUrl.replace("https://", "") + "/android");
+    const $$ = cheerio.load(detailRes.data);
+    let images = [];
+    $$("picture img").each((i, el) => images.push($$(el).attr("src")));
+    const iconEl = $$(".detail .icon img");
+    const obj = {
+      owner: "naxordeve",
+      title: iconEl.attr("alt").replace("Ikon ", "") || "none",
+      version: $$(".info .version").text().trim() || "none",
+      download: {
+        size: "unknown",
+        url: $$("a.button.last").attr("href") || "none"
+      },
+      author: $$(".autor").text().trim() || "none",
+      score: $('span[id="rating-inner-text"]').text().trim() || "none",
+      unduhan: $$(".dwstat").text().trim() || "none",
+      icon: iconEl.attr("src") || "none",
+      image: images,
+      desc: $$(".text-description").text().trim().split("\n")[0] || "none"
+    };
+
+    res.json(obj);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
+
 async function init() {
   const jar = {};
   const http = axios.create({
