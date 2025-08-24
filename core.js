@@ -16,6 +16,100 @@ app.use(express.urlencoded({ extended: true }));
 const me="naxordeve";
 const crypto = require('crypto');
 
+async function init() {
+  const jar = {};
+  const http = axios.create({
+    headers: {
+      accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "accept-language": "id-ID,id;q=0.9",
+      "user-agent": "Mozilla/5.0 (Linux; Android 10; Mobile Safari/537.36)"
+    }
+  });
+
+  const res = await http.get("https://www.scloudme.com/en4E/", { headers: { referer: "https://www.scloudme.com" } });
+  const setCookie = res.headers["set-cookie"];
+  if (setCookie) setCookie.forEach(c => {
+    const [k, v] = c.split(";")[0].split("=");
+    jar[k] = v;
+  });
+
+  const $ = cheerio.load(res.data);
+  return {
+    jar,
+    http,
+    form: {
+      downloader_verify: $('input[name="downloader_verify"]').val(),
+      _wp_http_referer: $('input[name="_wp_http_referer"]').val()
+    }
+  };
+}
+
+async function submitUrl(url) {
+  const { jar, http, form } = await init();
+  const body = new URLSearchParams({ ...form, url }).toString();
+  const res = await http.post("https://www.scloudme.com/download", body, {
+    headers: {
+      "content-type": "application/x-www-form-urlencoded",
+      referer: "https://www.scloudme.com/en4E/",
+      cookie: Object.entries(jar).map(([k, v]) => `${k}=${v}`).join("; ")
+    },
+    maxRedirects: 0,
+    validateStatus: s => s >= 200 && s < 400
+  });
+
+  const $ = cheerio.load(res.data);
+  const area = $("#soundcloud-area");
+  return {
+    jar,
+    http,
+    info: {
+      title: area.find("h3").text().trim(),
+      image: area.find("img").attr("src"),
+      form: {
+        _nonce: area.find('input[name="_nonce"]').val(),
+        _wp_http_referer: area.find('input[name="_wp_http_referer"]').val(),
+        action: area.find('input[name="action"]').val(),
+        title: area.find('input[name="title"]').val(),
+        yt: area.find('input[name="yt"]').val()
+      }
+    }
+  };
+}
+
+async function getLink(http, jar, info) {
+  const body = new URLSearchParams(info.form).toString();
+  const res = await http.post("https://www.scloudme.com/sc.php", body, {
+    headers: {
+      "content-type": "application/x-www-form-urlencoded",
+      referer: "https://www.scloudme.com/download",
+      cookie: Object.entries(jar).map(([k, v]) => `${k}=${v}`).join("; ")
+    },
+    maxRedirects: 0,
+    validateStatus: s => s >= 200 && s < 400
+  });
+  return res.request.res.responseUrl || "https://www.scloudme.com/sc.php";
+}
+
+function getArtist(title) {
+  const parts = title.split("-").map(s => s.trim());
+  return parts[1] || "-";
+}
+
+app.get("/soundcloud/download", async (req, res) => {
+  try {
+    const url = req.query.url;
+    if (!url) return res.status(400).json({ error: "No URL provided" });
+    const { jar, http, info } = await submitUrl(url);
+    const downloadUrl = await getLink(http, jar, info);
+    res.json({
+      meta: { title: info.title, artist: getArtist(info.title), image: info.image },
+      downloadUrl
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 
 async function searchAppleMusic(query) {
   let response = await axios.get(`https://music.apple.com/id/search?term=${query}`, {
