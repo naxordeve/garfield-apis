@@ -98,9 +98,9 @@ const download = async (slug) => {
 };
 
 app.get("/download/uptodown", async (req, res) => {
-const query = req.body.query;
-if (!query) return res.status(400).json({ error: "Query is required" });
-  try {const results = await search(query);
+  const query = req.query.query;
+  if (!query) return res.status(400).json({ error: "Query is required" });
+  try { const results = await search(query);
     if (!results.length) return res.status(404).json({ error: "No results found" });
     const info = await download(results[0].slug);
     res.json({ owner: "naxordeve", result: info });
@@ -108,7 +108,6 @@ if (!query) return res.status(400).json({ error: "Query is required" });
     res.status(500).json({ error: e.message });
   }
 });
-
 
 async function init() {
   const jar = {};
