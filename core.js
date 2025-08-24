@@ -17,7 +17,6 @@ const me="naxordeve";
 const crypto = require('crypto');
 
 
-
 let history = [];
 async function chat(prompt) {
   history.push({ content: prompt, is_user: true });
@@ -51,42 +50,64 @@ app.post("/ai/deepseak", async (req, res) => {
   }
 });
 
+const baseUrll = "https://id.uptodown.com";
+const search = async (query) => {
+  const response = await axios.post(baseUrll + "/android/search", { q: query });
+  const $ = cheerio.load(response.data);
+  let result = [];
+  $(".content .name a").each((_, a) => {
+    let _slug = $(a).attr("href");
+    let _name = $(a).text().trim();
+    result.push({
+      name: _name,
+      slug: _slug
+        .replace("." + baseUrll.replace("https://", "") + "/android", "")
+        .replace("https://", "")
+    });
+  });
+  return result;
+};
+
+const getDownloadData = async (slug, version) => {
+  const response = await axios.get(slug);
+  const $ = cheerio.load(response.data);
+  const downloadUrl = `https://dw.uptodown.net/dwn/${$(".button-group.download button").attr("data-url")}${version}.apk`;
+  const { headers } = await axios.head(downloadUrl);
+  return { size: headers["content-length"], url: downloadUrl };
+};
+
+const download = async (slug) => {
+  const response = await axios.get("https://" + slug + "." + baseUrll.replace("https://", "") + "/android");
+  const $ = cheerio.load(response.data);
+  let image = [];
+  let obj = {};
+  let v = $(".detail .icon img");
+  obj.title = v.attr("alt")?.replace("Ikon ", "") || "None";
+  let appSlug = $("a.button.last").attr("href");
+  obj.version = $(".info .version").text().trim() || "None";
+  const downloadData = await getDownloadData(appSlug, obj.version);
+  obj.download = downloadData || "None";
+  obj.author = $(".autor").text().trim() || "None";
+  obj.score = $('span[id="rating-inner-text"]').text().trim() || "None";
+  obj.unduhan = $(".dwstat").text().trim() || "None";
+  obj.icon = v.attr("src") || "None";
+  $(".gallery picture img").each((_, a) => image.push($(a).attr("src")));
+  obj.image = image || [];
+  obj.desc = $(".text-description").text().trim().split("\n")[0] || "None";
+  return obj;
+};
 
 app.get("/download/uptodown", async (req, res) => {
-  const query = req.query.q;
-  if (!query) return res.status(400).json({ error: "Missing query parameter q" });
-  try { const baseUrl = "https://id.uptodown.com";
-    const searchRes = await axios.post(baseUrl + "/android/search", { q: query });
-    const $ = cheerio.load(searchRes.data);
-    const firstApp = $(".content .name a").first();
-    const slug = firstApp.attr("href").replace("." + baseUrl.replace("https://", "") + "/android", "").replace("https://", "");
-    const detailRes = await axios.get("https://" + slug + "." + baseUrl.replace("https://", "") + "/android");
-    const $$ = cheerio.load(detailRes.data);
-    let images = [];
-    $$("picture img").each((i, el) => images.push($$(el).attr("src")));
-    const iconEl = $$(".detail .icon img");
-    const obj = {
-      owner: "naxordeve",
-      title: iconEl.attr("alt").replace("Ikon ", "") || "none",
-      version: $$(".info .version").text().trim() || "none",
-      download: {
-        size: "unknown",
-        url: $$("a.button.last").attr("href") || "none"
-      },
-      author: $$(".autor").text().trim() || "none",
-      score: $('span[id="rating-inner-text"]').text().trim() || "none",
-      unduhan: $$(".dwstat").text().trim() || "none",
-      icon: iconEl.attr("src") || "none",
-      image: images,
-      desc: $$(".text-description").text().trim().split("\n")[0] || "none"
-    };
-
-    res.json(obj);
+const query = req.body.query;
+if (!query) return res.status(400).json({ error: "Query is required" });
+  try {const results = await search(query);
+    if (!results.length) return res.status(404).json({ error: "No results found" });
+    const info = await download(results[0].slug);
+    res.json({ owner: "naxordeve", result: info });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
-
 
 
 async function init() {
