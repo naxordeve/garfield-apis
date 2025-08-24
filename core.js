@@ -17,6 +17,41 @@ const me="naxordeve";
 const crypto = require('crypto');
 
 
+
+let history = [];
+async function chat(prompt) {
+  history.push({ content: prompt, is_user: true });
+  const res = await axios.post(
+    "https://ai-chat-bot.pro/api/deep-seek-chat?streaming=1",
+    new URLSearchParams({
+      message: prompt,
+      last_chat_json: JSON.stringify(history)
+    }).toString(),
+    {
+      headers: {
+        accept: "*/*",
+        "content-type": "application/x-www-form-urlencoded",
+        "user-agent": "Mozilla/5.0 (Linux; Android 10)"
+      }
+    }
+  );
+
+  const reply = res.data;
+  history.push({ content: reply, is_user: false });
+  return reply;
+}
+
+app.post("/ai/deepseak", async (req, res) => {
+  const prompt = req.body.prompt;
+  if (!prompt) return res.status(400).json({ error: "Prompt required" });
+  try {const reply = await chat(prompt);
+  res.status(200).json({owner: 'naxordev', result: reply });
+  } catch {
+   res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+
 app.get("/download/uptodown", async (req, res) => {
   const query = req.query.q;
   if (!query) return res.status(400).json({ error: "Missing query parameter q" });
